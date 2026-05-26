@@ -1,0 +1,1789 @@
+<!doctype html>
+<html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Panel</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      input,
+      select,
+      textarea {
+        font-size: 16px !important;
+        padding: 12px !important;
+      }
+
+      .card {
+        border-radius: 12px;
+      }
+
+      h5 {
+        font-weight: 600;
+      }
+      .table-responsive {
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+
+  <body class="bg-light">
+    <!-- nev bar  -->
+
+    <nav
+      class="navbar navbar-light bg-white px-4 py-3 border-bottom position-fixed w-100 top-0 z-3"
+    >
+      <div class="d-flex align-items-center gap-2">
+        <img
+          src="https://allweatherseal.com/wp-content/uploads/2025/12/aws_logo_full_color_outline_no_tag.svg"
+          style="height: 48px"
+        />
+      </div>
+
+      <div class="ms-auto d-flex align-items-center gap-3">
+        <button
+          type="button"
+          class="btn btn-outline-dark"
+          onclick="goSettings()"
+        >
+          Settings
+        </button>
+        <div class="dropdown">
+          <button
+            class="btn btn-outline-dark rounded-circle d-flex align-items-center justify-content-center"
+            type="button"
+            id="profileBtn"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            style="width: 42px; height: 42px"
+          >
+            👤
+          </button>
+
+          <ul
+            class="dropdown-menu dropdown-menu-end p-3"
+            aria-labelledby="profileBtn"
+            style="min-width: 220px"
+          >
+            <li class="fw-bold">Profile</li>
+            <li class="text-muted small" id="profileAdminId"></li>
+            <li><hr class="dropdown-divider" /></li>
+            <li>
+              <button class="btn btn-sm btn-danger w-100" onclick="logout()">
+                Logout
+              </button>
+            </li>
+          </ul>
+        </div>
+        <div class="dropdown">
+          <button
+            class="btn btn-outline-dark position-relative"
+            type="button"
+            id="notifBtn"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            🔔
+            <span
+              id="notifBadge"
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+              style="display: none"
+              >0</span
+            >
+          </button>
+
+          <ul
+            class="dropdown-menu dropdown-menu-end p-0"
+            aria-labelledby="notifBtn"
+            id="notifMenu"
+            style="min-width: 320px; max-height: 320px; overflow-y: auto"
+          >
+            <li class="dropdown-header fw-bold">Notifications</li>
+            <li><hr class="dropdown-divider m-0" /></li>
+            <li>
+              <span class="dropdown-item-text text-muted"
+                >No notifications yet</span
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div class="container mt-4 pt-5">
+      <h2 class="mt-4">Admin Dashboard</h2>
+
+      <div class="row mt-3">
+        <div class="col-4">
+          <div class="card p-3 text-center shadow-sm">
+            <h6>Total Jobs</h6>
+            <h4 id="totalJobs">0</h4>
+          </div>
+        </div>
+
+        <div class="col-4">
+          <div class="card p-3 text-center shadow-sm">
+            <h6>Pending</h6>
+            <h4 id="pendingJobs">0</h4>
+          </div>
+        </div>
+
+        <div class="col-4">
+          <div class="card p-3 text-center shadow-sm">
+            <h6>Approved</h6>
+            <h4 id="approvedJobs">0</h4>
+          </div>
+        </div>
+      </div>
+
+      <input
+        type="text"
+        id="searchInput"
+        class="form-control mb-3 mt-4 shadow-sm"
+        placeholder="Search by Job Number..."
+        onkeyup="filterJobs()"
+      />
+
+      <table class="table table-bordered mt-3">
+        <thead>
+          <tr>
+            <th>Job</th>
+            <th>Status</th>
+            <th colspan="2">Details</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="jobTable"></tbody>
+      </table>
+
+      <div
+        id="lightbox"
+        style="
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.8);
+          justify-content: center;
+          align-items: center;
+          z-index: 9999;
+        "
+      >
+        <img
+          id="lightbox-img"
+          style="max-width: 90%; max-height: 90%; border-radius: 10px"
+        />
+      </div>
+    </div>
+
+    <script>
+      let jobsSnapshot = "";
+      document.addEventListener("submit", function (e) {
+        e.preventDefault();
+      });
+      const currentUser = JSON.parse(localStorage.getItem("user") || "null");
+
+      if (!currentUser) {
+        window.location.href = "login.html";
+      }
+      let isTyping = false;
+      document.addEventListener("focusin", (e) => {
+        if (
+          e.target.matches('textarea[id^="admin-reply-"]') ||
+          e.target.matches('input[id^="admin-img-"]')
+        ) {
+          isTyping = true;
+          chatActive = true;
+          pauseSync(5);
+        }
+      });
+
+      document.addEventListener("focusout", (e) => {
+        if (
+          e.target.matches('textarea[id^="admin-reply-"]') ||
+          e.target.matches('input[id^="admin-img-"]')
+        ) {
+          isTyping = false;
+          chatActive = false;
+          pauseSync(5);
+        }
+      });
+
+      //  block non-admin
+      if (currentUser.role !== "admin") {
+        alert("Access denied");
+        window.location.href = "index.html";
+      }
+      let allJobs = [];
+      let lastJobs = [];
+      let soundEnabled = false;
+
+      document.addEventListener("click", () => {
+        soundEnabled = true;
+      });
+      let syncPausedUntil = 0;
+      let syncLock = false;
+      let chatActive = false;
+
+      function pauseSync(minutes = 5) {
+        syncPausedUntil = Date.now() + minutes * 60 * 1000;
+      }
+
+      function logout() {
+        localStorage.removeItem(`seenNotificationIds_${currentUser.id}`);
+        localStorage.removeItem("user");
+        window.location.href = "login.html";
+      }
+
+      // notifications
+
+      function safeArray(key) {
+        try {
+          const raw = localStorage.getItem(key);
+          const value = raw ? JSON.parse(raw) : [];
+          return Array.isArray(value) ? value : [];
+        } catch {
+          return [];
+        }
+      }
+
+      let notifications = [];
+
+      function saveSeen() {
+        localStorage.setItem(
+          "seenNotificationIds",
+          JSON.stringify(seenNotificationIds),
+        );
+      }
+
+      function updateNotifBadge() {
+        const badge = document.getElementById("notifBadge");
+        if (!badge) return;
+
+        const unread = notifications.filter((n) => !n.read).length;
+
+        if (unread > 0) {
+          badge.style.display = "inline-block";
+          badge.innerText = unread > 99 ? "99+" : unread;
+        } else {
+          badge.style.display = "none";
+        }
+      }
+
+      function renderNotifMenu() {
+        const menu = document.getElementById("notifMenu");
+        if (!menu) return;
+
+        if (!notifications.length) {
+          menu.innerHTML = `
+      <li class="dropdown-header fw-bold">Notifications</li>
+      <li><hr class="dropdown-divider m-0"></li>
+      <li><span class="dropdown-item-text text-muted">No notifications yet</span></li>
+    `;
+          return;
+        }
+
+        const sorted = [...notifications]
+          .sort((a, b) => (b.ts || 0) - (a.ts || 0))
+          .slice(0, 20);
+
+        menu.innerHTML = `
+    <li class="dropdown-header fw-bold">Notifications</li>
+    <li><hr class="dropdown-divider m-0"></li>
+    ${sorted
+      .map(
+        (n) => `
+          <li>
+            <button class="dropdown-item ${n.read ? "" : "fw-bold"}" type="button" onclick="openNotification('${n.targetId}', '${String(n.message).replace(/'/g, "\\'")}')">
+              <div>${n.message}</div>
+              <small class="text-muted">${n.time}</small>
+            </button>
+          </li>
+        `,
+      )
+      .join("")}
+  `;
+      }
+
+      function buildNotificationsFromJobs(jobs) {
+        notifications = [];
+
+        jobs.forEach((job) => {
+          const jobKey = `job-${job.id}`;
+          notifications.unshift({
+            key: jobKey,
+            message: `New Job #${job.job_number}`,
+            targetId: job.id,
+            time: new Date(job.created_at).toLocaleString(),
+            ts: getTimeMs(job.created_at),
+            read: seenNotificationIds.includes(jobKey),
+          });
+
+          const msgs = Array.isArray(job.data?.messages)
+            ? job.data.messages
+            : [];
+          if (msgs.length) {
+            const lastMsg = msgs[msgs.length - 1];
+            if (lastMsg && lastMsg.sender === "user") {
+              const msgKey = `msg-${job.id}-${msgs.length}`;
+              notifications.unshift({
+                key: msgKey,
+                message: `New msg from #${job.job_number}`,
+                targetId: job.id,
+                time: lastMsg.time || new Date().toLocaleString(),
+                ts: getTimeMs(lastMsg.time || job.created_at),
+                read: seenNotificationIds.includes(msgKey),
+              });
+            }
+          }
+        });
+
+        renderNotifMenu();
+        updateNotifBadge();
+      }
+
+      function openNotification(targetId, message) {
+        const row = document.querySelector(`[data-job-row="${targetId}"]`);
+        if (row) {
+          row.scrollIntoView({ behavior: "smooth", block: "center" });
+          row.style.outline = "3px solid #0d6efd";
+          setTimeout(() => (row.style.outline = ""), 2000);
+        }
+
+        const item = notifications.find(
+          (n) => n.targetId == targetId && n.message === message && !n.read,
+        );
+
+        if (item) {
+          item.read = true;
+          if (!seenNotificationIds.includes(item.key)) {
+            seenNotificationIds.push(item.key);
+          }
+          saveSeen();
+          renderNotifMenu();
+          updateNotifBadge();
+        }
+      }
+
+      const adminLabel =
+        currentUser.email ||
+        currentUser.phone ||
+        currentUser.name ||
+        `Admin #${currentUser.id}`;
+      document.getElementById("profileAdminId").innerText = adminLabel;
+
+      // click function
+      function openLightbox(src) {
+        const box = document.getElementById("lightbox");
+        const img = document.getElementById("lightbox-img");
+
+        img.src = src;
+        box.style.display = "flex";
+      }
+
+      function closeLightbox() {
+        document.getElementById("lightbox").style.display = "none";
+      }
+
+      document
+        .getElementById("lightbox")
+        .addEventListener("click", closeLightbox);
+
+      // ================= LOAD JOBS =================
+      let tableBuilt = false;
+
+      async function loadJobs() {
+        try {
+          const res = await fetch("http://localhost:5000/jobs");
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+          const newJobs = await res.json();
+          const sortedJobs = [...newJobs].sort(
+            (a, b) => new Date(b.created_at) - new Date(a.created_at),
+          );
+          if (!Array.isArray(newJobs))
+            throw new Error("Jobs response is not an array");
+
+          // first load only
+          if (!tableBuilt) {
+            tableBuilt = true;
+            lastJobs = JSON.parse(JSON.stringify(sortedJobs));
+            allJobs = sortedJobs;
+            filterJobs();
+            buildNotificationsFromJobs(sortedJobs);
+            return;
+          }
+          // update jobs + notifications
+          const oldJobs = Array.isArray(lastJobs) ? lastJobs : [];
+
+          sortedJobs.forEach((job) => {
+            const oldJob = oldJobs.find((j) => j.id === job.id);
+
+            if (!oldJob) {
+              const jobKey = `job-${job.id}`;
+              if (!seenNotificationIds.includes(jobKey)) {
+                notifications.unshift({
+                  key: jobKey,
+                  message: `New Job #${job.job_number}`,
+                  targetId: job.id,
+                  time: new Date(job.created_at).toLocaleString(),
+                  ts: Date.now(),
+                  read: false,
+                });
+              }
+            } else {
+              // status change notification
+              if (oldJob.status !== job.status) {
+                const statusKey = `status-${job.id}-${job.status}`;
+                if (!seenNotificationIds.includes(statusKey)) {
+                  notifications.unshift({
+                    key: statusKey,
+                    message: `Job #${job.job_number} ${job.status}`,
+                    targetId: job.id,
+                    time: new Date().toLocaleString(),
+                    ts: Date.now(),
+                    read: false,
+                  });
+                  seenNotificationIds.push(statusKey);
+                  saveSeen();
+                }
+              }
+
+              // new user message notification
+              const oldMsgs = Array.isArray(oldJob?.data?.messages)
+                ? oldJob.data.messages
+                : [];
+              const newMsgs = Array.isArray(job?.data?.messages)
+                ? job.data.messages
+                : [];
+
+              if (newMsgs.length > oldMsgs.length) {
+                const latestMsg = newMsgs[newMsgs.length - 1];
+                if (latestMsg && latestMsg.sender === "user") {
+                  const msgKey = `msg-${job.id}-${newMsgs.length}`;
+                  if (!seenNotificationIds.includes(msgKey)) {
+                    notifications.unshift({
+                      key: msgKey,
+                      message: `New msg from #${job.job_number}`,
+                      targetId: job.id,
+                      time: latestMsg.time || new Date().toLocaleString(),
+                      ts: Date.now(),
+                      read: false,
+                    });
+                    seenNotificationIds.push(msgKey);
+                    saveSeen();
+                  }
+                }
+              }
+            }
+          });
+
+          lastJobs = JSON.parse(JSON.stringify(newJobs));
+          allJobs = newJobs;
+          renderNotifMenu();
+          updateNotifBadge();
+          filterJobs();
+          saveSeen();
+          filterJobs();
+        } catch (err) {
+          console.error("loadJobs failed:", err);
+        }
+      }
+
+      function saveSeen() {
+        localStorage.setItem(
+          "seenNotificationIds",
+          JSON.stringify(seenNotificationIds),
+        );
+      }
+
+      function updateNotifBadge() {
+        const badge = document.getElementById("notifBadge");
+        if (!badge) return;
+
+        const unread = notifications.filter((n) => !n.read).length;
+
+        if (unread > 0) {
+          badge.style.display = "inline-block";
+          badge.innerText = unread > 99 ? "99+" : unread;
+        } else {
+          badge.style.display = "none";
+        }
+      }
+
+      function renderNotifMenu() {
+        const menu = document.getElementById("notifMenu");
+        if (!menu) return;
+
+        if (!notifications.length) {
+          menu.innerHTML = `
+      <li class="dropdown-header fw-bold">Notifications</li>
+      <li><hr class="dropdown-divider m-0"></li>
+      <li><span class="dropdown-item-text text-muted">No notifications yet</span></li>
+    `;
+          return;
+        }
+
+        const sorted = [...notifications].reverse();
+
+        menu.innerHTML = `
+    <li class="dropdown-header fw-bold">Notifications</li>
+    <li><hr class="dropdown-divider m-0"></li>
+    ${sorted
+      .map(
+        (n) => `
+          <li>
+            <button class="dropdown-item ${n.read ? "" : "fw-bold"}" type="button" onclick="openNotification('${n.targetId}', '${String(n.message).replace(/'/g, "\\'")}')">
+              <div>${n.message}</div>
+              <small class="text-muted">${n.time}</small>
+            </button>
+          </li>
+        `,
+      )
+      .join("")}
+  `;
+      }
+
+      function buildNotificationsFromJobs(jobs) {
+        notifications = [];
+
+        jobs.forEach((job) => {
+          const jobKey = `job-${job.id}`;
+          notifications.unshift({
+            key: jobKey,
+            message: `New Job #${job.job_number}`,
+            targetId: job.id,
+            time: new Date(job.created_at).toLocaleString(),
+            ts: Date.now(),
+            read: seenNotificationIds.includes(jobKey),
+          });
+
+          const msgs = Array.isArray(job.data?.messages)
+            ? job.data.messages
+            : [];
+          if (msgs.length) {
+            const lastMsg = msgs[msgs.length - 1];
+            if (lastMsg && lastMsg.sender === "user") {
+              const msgKey = `msg-${job.id}-${msgs.length}`;
+              notifications.unshift({
+                key: msgKey,
+                message: `New msg from #${job.job_number}`,
+                targetId: job.id,
+                time: lastMsg.time || new Date().toLocaleString(),
+                ts: Date.now(),
+                read: seenNotificationIds.includes(msgKey),
+              });
+            }
+          }
+        });
+
+        renderNotifMenu();
+        updateNotifBadge();
+      }
+
+      function openNotification(targetId, message) {
+        const row = document.querySelector(`[data-job-row="${targetId}"]`);
+        if (row) {
+          row.scrollIntoView({ behavior: "smooth", block: "center" });
+          row.style.outline = "3px solid #0d6efd";
+          setTimeout(() => (row.style.outline = ""), 2000);
+        }
+
+        const item = notifications.find(
+          (n) => n.targetId == targetId && n.message === message && !n.read,
+        );
+
+        if (item) {
+          item.read = true;
+          if (!seenNotificationIds.includes(item.key)) {
+            seenNotificationIds.push(item.key);
+          }
+          saveSeen();
+          renderNotifMenu();
+          updateNotifBadge();
+        }
+      }
+
+      // ================= FILTER =================
+      function filterJobs() {
+        document.getElementById("searchInput").value.toLowerCase();
+        const search = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+
+        let filtered = allJobs;
+
+        if (search) {
+          filtered = allJobs.filter((job) =>
+            String(job.job_number || "")
+              .toLowerCase()
+              .includes(search),
+          );
+        }
+
+        renderTable(filtered);
+      }
+
+      //  image renderer for messages
+      function imgUrl(path) {
+        if (!path) return "";
+        if (path.startsWith("http://") || path.startsWith("https://"))
+          return path;
+        return `http://localhost:5000${path.startsWith("/") ? path : "/" + path}`;
+      }
+
+      function renderImages(images = []) {
+        const imgs = (Array.isArray(images) ? images : [])
+          .map(imgUrl)
+          .filter(Boolean);
+
+        if (!imgs.length) return "";
+
+        const total = imgs.length;
+
+        // 1 image
+        if (total === 1) {
+          return `
+      <img
+        src="${imgs[0]}"
+        onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 0)'
+        style="
+          width:100%;
+          max-width:280px;
+          border-radius:10px;
+          margin-top:5px;
+          cursor:pointer;
+          display:block;
+        "
+      >
+    `;
+        }
+
+        // 2 images
+        if (total === 2) {
+          return `
+      <div style="
+        display:grid;
+        grid-template-columns:repeat(2, 1fr);
+        gap:4px;
+        max-width:280px;
+        margin-top:5px;
+      ">
+        ${imgs
+          .map(
+            (img, i) => `
+              <img
+                src="${img}"
+                onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, ${i})'
+                style="
+                  width:100%;
+                  height:140px;
+                  object-fit:cover;
+                  border-radius:8px;
+                  cursor:pointer;
+                "
+              >
+            `,
+          )
+          .join("")}
+      </div>
+    `;
+        }
+
+        // 3 images -> WhatsApp-like layout
+        if (total === 3) {
+          return `
+      <div style="
+        display:grid;
+        grid-template-columns:1.2fr 1fr;
+        gap:4px;
+        max-width:280px;
+        margin-top:5px;
+      ">
+        <img
+          src="${imgs[0]}"
+          onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 0)'
+          style="
+            grid-row:span 2;
+            width:100%;
+            height:244px;
+            object-fit:cover;
+            border-radius:8px;
+            cursor:pointer;
+          "
+        >
+        <img
+          src="${imgs[1]}"
+          onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 1)'
+          style="
+            width:100%;
+            height:120px;
+            object-fit:cover;
+            border-radius:8px;
+            cursor:pointer;
+          "
+        >
+        <img
+          src="${imgs[2]}"
+          onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 2)'
+          style="
+            width:100%;
+            height:120px;
+            object-fit:cover;
+            border-radius:8px;
+            cursor:pointer;
+          "
+        >
+      </div>
+    `;
+        }
+
+        // 4+ images -> 2x2 with +N on 4th
+        const shown = imgs.slice(0, 4);
+
+        return `
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:4px;
+      max-width:280px;
+      margin-top:5px;
+    ">
+      ${shown
+        .map((img, i) => {
+          const isLast = i === 3 && total > 4;
+          return `
+            <div style="position:relative;">
+              <img
+                src="${img}"
+                onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, ${i})'
+                style="
+                  width:100%;
+                  height:120px;
+                  object-fit:cover;
+                  border-radius:8px;
+                  cursor:pointer;
+                "
+              >
+              ${
+                isLast
+                  ? `
+                    <div
+                      onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, ${i})'
+                      style="
+                        position:absolute;
+                        inset:0;
+                        background:rgba(0,0,0,0.55);
+                        color:#fff;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:22px;
+                        font-weight:bold;
+                        border-radius:8px;
+                        cursor:pointer;
+                      "
+                    >
+                      +${total - 4}
+                    </div>
+                  `
+                  : ""
+              }
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+        onclick = "openImageViewerFromDB(${JSON.stringify(imgs)}, ${i})";
+      }
+
+      window.openImageViewerFromDB = function (images, startIndex = 0) {
+        const imgs = (Array.isArray(images) ? images : [])
+          .map(imgUrl)
+          .filter(Boolean);
+        if (!imgs.length) return;
+
+        let current = startIndex;
+
+        const overlay = document.createElement("div");
+        overlay.style = `
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.9);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
+  `;
+
+        const img = document.createElement("img");
+        img.style = `
+    max-width:90%;
+    max-height:90%;
+    object-fit:contain;
+    border-radius:8px;
+  `;
+
+        function show(index) {
+          current = index;
+          img.src = imgs[current];
+        }
+
+        show(current);
+
+        const prev = document.createElement("div");
+        prev.innerHTML = "◀";
+        prev.style = `
+    position:absolute;
+    left:20px;
+    font-size:40px;
+    color:white;
+    cursor:pointer;
+    user-select:none;
+  `;
+        prev.onclick = () => {
+          if (current > 0) show(current - 1);
+        };
+
+        const next = document.createElement("div");
+        next.innerHTML = "▶";
+        next.style = `
+    position:absolute;
+    right:20px;
+    font-size:40px;
+    color:white;
+    cursor:pointer;
+    user-select:none;
+  `;
+        next.onclick = () => {
+          if (current < imgs.length - 1) show(current + 1);
+        };
+
+        const close = document.createElement("div");
+        close.innerHTML = "✖";
+        close.style = `
+    position:absolute;
+    top:20px;
+    right:20px;
+    font-size:28px;
+    color:white;
+    cursor:pointer;
+    user-select:none;
+  `;
+        close.onclick = () => overlay.remove();
+
+        overlay.appendChild(img);
+        overlay.appendChild(prev);
+        overlay.appendChild(next);
+        overlay.appendChild(close);
+
+        document.body.appendChild(overlay);
+      };
+
+      // ================= RENDER TABLE =================
+      function renderTable(jobs) {
+        const table = document.getElementById("jobTable");
+        table.innerHTML = "";
+
+        let total = jobs.length;
+        let approved = 0;
+        let pending = 0;
+
+        jobs.forEach((job) => {
+          if (job.status === "Approved") approved++;
+          else pending++;
+
+          const d = job.data || {};
+          let images = [];
+
+          if (d.images) {
+            images = Array.isArray(d.images) ? d.images : d.images.split(",");
+          }
+          let tags = [];
+          if (d.tags) {
+            tags = Array.isArray(d.tags) ? d.tags : d.tags.split(",");
+          }
+          const date = new Date(job.created_at).toLocaleString("en-US", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          });
+
+          if (job.status === "Approved") {
+            actionHTML = `
+    <div class="d-flex align-items-start gap-2">
+
+      <button class="btn btn-secondary btn-sm" disabled>
+        Approved
+      </button>
+
+      <div class="dropdown">
+        <button
+          class="btn btn-light border btn-sm"
+          type="button"
+          data-bs-toggle="dropdown"
+          style="font-size:18px; line-height:1;"
+        >
+          ⋮
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <button
+              class="dropdown-item text-danger"
+              onclick="deleteJob('${job.job_number}')"
+            >
+              Delete Job
+            </button>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  `;
+          } else if (job.status === "Declined") {
+            actionHTML = `
+    <div class="d-flex align-items-start gap-2">
+
+      <button
+        type="button"
+        onclick="resendJob(${job.id})"
+        class="btn btn-warning btn-sm"
+      >
+        Send Back
+      </button>
+
+      <div class="dropdown">
+        <button
+          class="btn btn-light border btn-sm"
+          type="button"
+          data-bs-toggle="dropdown"
+          style="font-size:18px; line-height:1;"
+        >
+          ⋮
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <button
+              class="dropdown-item text-danger"
+              onclick="deleteJob('${job.job_number}')"
+            >
+              Delete Job
+            </button>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  `;
+          } else {
+            actionHTML = `
+    <div class="d-flex align-items-start gap-2">
+
+      <div>
+        <button
+          type="button"
+          onclick="approve(${job.id})"
+          class="btn btn-success btn-sm mb-1"
+        >
+          Approve
+        </button>
+
+        <br>
+
+        <button
+          type="button"
+          onclick="decline(${job.id})"
+          class="btn btn-danger btn-sm mt-1"
+        >
+          Decline
+        </button>
+      </div>
+
+      <div class="dropdown">
+        <button
+          class="btn btn-light border btn-sm"
+          type="button"
+          data-bs-toggle="dropdown"
+          style="font-size:18px; line-height:1;"
+        >
+          ⋮
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <button
+              class="dropdown-item text-danger"
+              onclick="deleteJob('${job.job_number}')"
+            >
+              Delete Job
+            </button>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  `;
+          }
+          const row = document.createElement("tr");
+          row.setAttribute("data-job-row", `${job.id}`);
+          row.className =
+            job.status === "Approved"
+              ? "table-success"
+              : job.status === "Declined"
+                ? "table-danger"
+                : "";
+
+          row.innerHTML = `
+      <td>${job.job_number}</td>
+      <td>${job.status}</td>
+      
+      <td colspan="2">
+  <strong>DATE:</strong> ${date}<br>
+  <strong>NOTES:</strong> ${job.notes || "-"}<br>
+
+  ${Object.entries(d)
+    .filter(
+      ([key]) =>
+        !["images", "tags", "messages", "instructions", "instruction"].includes(
+          key,
+        ),
+    )
+    .map(
+      ([key, val]) =>
+        `<strong>${key.replace(/_/g, " ").toUpperCase()}:</strong> ${val || "-"}<br>`,
+    )
+    .join("")}
+
+ ${
+   images.length
+     ? `
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:10px;">
+      ${images
+        .slice(0, 3)
+        .map((img, i) => {
+          const isLast = i === 2 && images.length > 3;
+
+          return `
+            <div style="position:relative; text-align:center;">
+              <img
+                src="${
+                  img.startsWith("http://") || img.startsWith("https://")
+                    ? img
+                    : `http://localhost:5000${img}`
+                }"
+                onclick='openSubmittedSlider(${JSON.stringify(images)}, ${i})'
+                style="width:100%; height:100px; object-fit:cover; border-radius:6px; cursor:pointer;"
+              >
+
+              ${
+                isLast
+                  ? `
+                    <div
+                      onclick='openSubmittedSlider(${JSON.stringify(images)}, ${i})'
+                      style="
+                        position:absolute;
+                        inset:0;
+                        background:rgba(0,0,0,0.55);
+                        color:#fff;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:22px;
+                        font-weight:bold;
+                        border-radius:6px;
+                        cursor:pointer;
+                      "
+                    >
+                      +${images.length - 3}
+                    </div>
+                  `
+                  : ""
+              }
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `
+     : ""
+ }
+
+<div
+  id="chat-${job.id}"
+  style="
+    background:#f5f5f5;
+    border-radius:12px;
+    padding:10px;
+    max-height:400px;
+    overflow-y:auto;
+    margin-top:15px;
+  "
+>
+
+${
+  d.messages && d.messages.length
+    ? [...d.messages]
+        .map(
+          (msg) => `
+
+      <div style="
+        display:flex;
+        justify-content:${msg.sender === "admin" ? "flex-end" : "flex-start"};
+        margin:10px 0;
+      ">
+
+        <div style="
+          background:${msg.sender === "admin" ? "#dbeafe" : "#dcf8c6"};
+          padding:10px;
+          border-radius:12px;
+          max-width:75%;
+          word-break:break-word;
+        ">
+
+          ${msg.text ? `<div style="margin-bottom:6px;">${msg.text}</div>` : ""}
+
+          ${msg.images && msg.images.length ? renderImages(msg.images) : ""}
+
+          <div style="
+            font-size:11px;
+            color:#666;
+            margin-top:5px;
+            text-align:right;
+          ">
+            ${msg.time}
+          </div>
+
+        </div>
+
+      </div>
+
+    `,
+        )
+        .join("")
+    : "<div>No messages yet</div>"
+}
+
+</div>
+<div style="
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+">
+
+  <label style="
+    cursor:pointer;
+    font-size:22px;
+  ">
+    📎
+
+    <input
+      type="file"
+      id="admin-img-${job.id}"
+      multiple
+      onchange="previewAdminImages(${job.id})"
+      style="display:none;"
+    >
+  </label>
+
+<textarea
+   id="admin-reply-${job.id}"
+  placeholder="Type message..."
+  onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();event.stopPropagation();sendAdminMessage(${job.id}, event); return false;}"
+  placeholder="Type message..."
+  style="
+    flex:1;
+    border-radius:20px;
+    padding:10px;
+    resize:none;
+    height:50px;
+  "
+></textarea>
+
+  <button
+ type="button"
+ onclick="sendAdminMessage(${job.id}, event); return false;"
+    style="
+      border:none;
+      background:#0d6efd;
+      color:white;
+      width:45px;
+      height:45px;
+      border-radius:50%;
+      font-size:18px;
+    "
+  >
+    ➤
+  </button>
+
+</div>
+
+<div
+  id="admin-preview-${job.id}"
+  style="
+    display:flex;
+    gap:8px;
+    margin-top:8px;
+    flex-wrap:wrap;
+  "
+></div>
+
+</td>
+      
+      <td>${actionHTML}</td>
+    `;
+
+          table.appendChild(row);
+          setTimeout(() => {
+            const chat = document.getElementById(`chat-${job.id}`);
+
+            if (chat) {
+              chat.scrollTop = chat.scrollHeight;
+            }
+          }, 50);
+        });
+
+        document.getElementById("totalJobs").innerText = total;
+        document.getElementById("approvedJobs").innerText = approved;
+        document.getElementById("pendingJobs").innerText = pending;
+      }
+
+      window.openSubmittedSlider = function (images, startIndex = 0) {
+        const imgs = (Array.isArray(images) ? images : [])
+          .map((img) =>
+            img.startsWith("http://") || img.startsWith("https://")
+              ? img
+              : `http://localhost:5000${img}`,
+          )
+          .filter(Boolean);
+
+        if (!imgs.length) return;
+
+        let current = startIndex;
+
+        const overlay = document.createElement("div");
+        overlay.style = `
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.92);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
+    padding:20px;
+    box-sizing:border-box;
+  `;
+
+        const frame = document.createElement("div");
+        frame.style = `
+    position:relative;
+    width:min(92vw, 1200px);
+    height:min(88vh, 900px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  `;
+
+        const img = document.createElement("img");
+        img.style = `
+    max-width:100%;
+    max-height:100%;
+    object-fit:contain;
+    border-radius:10px;
+    display:block;
+    background:#111;
+  `;
+
+        function show(index) {
+          current = index;
+          img.src = imgs[current];
+        }
+
+        show(current);
+
+        const prev = document.createElement("button");
+        prev.type = "button";
+        prev.innerHTML = "◀";
+        prev.style = `
+    position:absolute;
+    left:0;
+    top:50%;
+    transform:translateY(-50%);
+    width:48px;
+    height:48px;
+    border:none;
+    border-radius:10px;
+    background:rgba(255,255,255,0.15);
+    color:#fff;
+    font-size:26px;
+    cursor:pointer;
+  `;
+        prev.onclick = () => {
+          if (current > 0) show(current - 1);
+        };
+
+        const next = document.createElement("button");
+        next.type = "button";
+        next.innerHTML = "▶";
+        next.style = `
+    position:absolute;
+    right:0;
+    top:50%;
+    transform:translateY(-50%);
+    width:48px;
+    height:48px;
+    border:none;
+    border-radius:10px;
+    background:rgba(255,255,255,0.15);
+    color:#fff;
+    font-size:26px;
+    cursor:pointer;
+  `;
+        next.onclick = () => {
+          if (current < imgs.length - 1) show(current + 1);
+        };
+
+        const close = document.createElement("button");
+        close.type = "button";
+        close.innerHTML = "✕";
+        close.style = `
+    position:absolute;
+    top:-30px;
+    right:-100px;
+    width:42px;
+    height:42px;
+    border:none;
+    border-radius:50%;
+    background:#7c3aed;
+    color:#fff;
+    font-size:22px;
+    cursor:pointer;
+  `;
+        close.onclick = () => overlay.remove();
+
+        frame.appendChild(img);
+        frame.appendChild(prev);
+        frame.appendChild(next);
+        frame.appendChild(close);
+        overlay.appendChild(frame);
+        document.body.appendChild(overlay);
+
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) overlay.remove();
+        });
+      };
+      window.deleteJob = async function (jobNumber) {
+        if (!confirm(`Delete Job #${jobNumber} permanently?`)) return;
+
+        try {
+          const res = await fetch(
+            `http://localhost:5000/jobs/delete-job/${encodeURIComponent(jobNumber)}`,
+            {
+              method: "DELETE",
+            },
+          );
+
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+
+          loadJobs();
+        } catch (err) {
+          console.error(err);
+          alert("Delete failed");
+        }
+      };
+
+      // ================= APPROVE =================
+      async function approve(jobId) {
+        await fetch(`http://localhost:5000/jobs/${jobId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: "Approved",
+          }),
+        });
+
+        // update UI ONLY
+        const row = document
+          .querySelector(`button[onclick="approve(${jobId})"]`)
+          ?.closest("tr");
+
+        if (row) {
+          row.classList.remove("table-danger");
+          row.classList.add("table-success");
+
+          const statusCell = row.children[1];
+          statusCell.innerText = "Approved";
+
+          const actionCell = row.lastElementChild;
+          actionCell.innerHTML = `<button class="btn btn-secondary btn-sm" disabled>Approved</button>`;
+        }
+      }
+
+      // ================= DECLINE =================
+      async function decline(jobId) {
+        await fetch(`http://localhost:5000/jobs/${jobId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: "Declined",
+          }),
+        });
+
+        const row = document
+          .querySelector(`button[onclick="decline(${jobId})"]`)
+          ?.closest("tr");
+
+        if (row) {
+          row.classList.remove("table-success");
+          row.classList.add("table-danger");
+
+          const statusCell = row.children[1];
+          statusCell.innerText = "Declined";
+
+          const actionCell = row.lastElementChild;
+          actionCell.innerHTML = `<button type="button" onclick="resendJob(${jobId})" class="btn btn-warning btn-sm">Send Back</button>`;
+        }
+      }
+
+      // ================= RESEND =================
+      async function resendJob(id) {
+        await fetch(`http://localhost:5000/jobs/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: "Rework",
+          }),
+        });
+
+        const row = document
+          .querySelector(`button[onclick="resendJob(${id})"]`)
+          ?.closest("tr");
+
+        if (row) {
+          row.classList.remove("table-danger", "table-success");
+
+          const statusCell = row.children[1];
+          statusCell.innerText = "Rework";
+
+          const actionCell = row.lastElementChild;
+          actionCell.innerHTML = `
+      <button type="button" onclick="approve(${id})" class="btn btn-success btn-sm mb-1">Approve</button>
+      <br>
+      <button type="button" onclick="decline(${id})" class="btn btn-danger btn-sm mt-1">Decline</button>
+    `;
+        }
+      }
+
+      // chat functions
+      window.sendAdminMessage = async function (jobId, e) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          pauseSync(5);
+        }
+        const textInput = document.getElementById(`admin-reply-${jobId}`);
+
+        const fileInput = document.getElementById(`admin-img-${jobId}`);
+
+        const text = textInput.value.trim();
+
+        const files = [...fileInput.files];
+        const chatBox = document.getElementById(`chat-${jobId}`);
+
+        const oldScroll = chatBox.scrollHeight;
+
+        if (!text && files.length === 0) return;
+
+        let uploadedImages = [];
+
+        // upload ALL images first
+        for (const file of files) {
+          const formData = new FormData();
+
+          formData.append("image", file);
+
+          const uploadRes = await fetch("http://localhost:5000/jobs/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          const uploadData = await uploadRes.json();
+
+          uploadedImages.push(uploadData.filePath);
+        }
+
+        // GET JOB
+        const job = allJobs.find((j) => j.id == jobId);
+
+        const d = job.data || {};
+
+        const oldMessages = d.messages || [];
+
+        // CREATE ONLY ONE MESSAGE
+        const updatedMessages = [
+          ...oldMessages,
+          {
+            sender: "admin",
+            text: text,
+            images: uploadedImages,
+            time: new Date().toLocaleString(),
+          },
+        ];
+
+        // SAVE
+        await fetch(`http://localhost:5000/jobs/${jobId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            data: {
+              ...d,
+              messages: updatedMessages,
+            },
+          }),
+        });
+
+        textInput.value = "";
+
+        fileInput.value = "";
+
+        document.getElementById(`admin-preview-${jobId}`).innerHTML = "";
+
+        const chat = document.getElementById(`chat-${jobId}`);
+
+        const msgWrap = document.createElement("div");
+        msgWrap.style.display = "flex";
+        msgWrap.style.justifyContent = "flex-end";
+        msgWrap.style.margin = "10px 0";
+
+        msgWrap.innerHTML = `
+  <div style="
+    background:#dbeafe;
+    padding:10px;
+    border-radius:12px;
+    max-width:75%;
+  ">
+    ${text ? `<div>${text}</div>` : ""}
+    ${uploadedImages.length ? renderImages(uploadedImages) : ""}
+    <div style="
+      font-size:11px;
+      color:#666;
+      margin-top:5px;
+      text-align:right;
+    ">
+      ${new Date().toLocaleString()}
+    </div>
+  </div>
+`;
+
+        chat.appendChild(msgWrap);
+        chat.scrollTop = chat.scrollHeight;
+
+        setTimeout(() => {
+          const newChat = document.getElementById(`chat-${jobId}`);
+
+          if (newChat) {
+            newChat.scrollTop = newChat.scrollHeight;
+          }
+        }, 100);
+
+        return false;
+      };
+
+      // photo preview
+      window.previewAdminImages = function (jobId) {
+        const files = [...document.getElementById(`admin-img-${jobId}`).files];
+
+        const preview = document.getElementById(`admin-preview-${jobId}`);
+
+        preview.innerHTML = "";
+
+        files.slice(0, 3).forEach((file) => {
+          const img = document.createElement("img");
+
+          img.src = URL.createObjectURL(file);
+
+          img.style.width = "70px";
+          img.style.height = "70px";
+          img.style.objectFit = "cover";
+          img.style.borderRadius = "8px";
+
+          preview.appendChild(img);
+        });
+
+        if (files.length > 3) {
+          const more = document.createElement("div");
+
+          more.innerHTML = `+${files.length - 3}`;
+
+          more.style.width = "70px";
+          more.style.height = "70px";
+          more.style.display = "flex";
+          more.style.alignItems = "center";
+          more.style.justifyContent = "center";
+          more.style.background = "#777";
+          more.style.color = "white";
+          more.style.borderRadius = "8px";
+
+          preview.appendChild(more);
+        }
+      };
+
+      window.refreshChats = async function () {
+        const res = await fetch("http://localhost:5000/jobs");
+        const jobs = await res.json();
+
+        jobs.forEach((job) => {
+          const chat = document.getElementById(`chat-${job.id}`);
+          if (!chat) return;
+
+          const d = job.data || {};
+
+          chat.innerHTML =
+            d.messages && d.messages.length
+              ? [...d.messages]
+                  .map(
+                    (msg) => `
+            <div style="
+              display:flex;
+              justify-content:${msg.sender === "admin" ? "flex-end" : "flex-start"};
+              margin:10px 0;
+            ">
+              <div style="
+                background:${msg.sender === "admin" ? "#dbeafe" : "#dcf8c6"};
+                padding:10px;
+                border-radius:12px;
+                max-width:75%;
+                word-break:break-word;
+              ">
+                ${msg.text ? `<div style="margin-bottom:6px;">${msg.text}</div>` : ""}
+                ${msg.images && msg.images.length ? renderImages(msg.images) : ""}
+                <div style="font-size:11px; color:#666; margin-top:5px; text-align:right;">
+                  ${msg.time}
+                </div>
+              </div>
+            </div>
+          `,
+                  )
+                  .join("")
+              : "<div>No messages yet</div>";
+
+          chat.scrollTop = chat.scrollHeight;
+        });
+      };
+
+      // settings
+      function goSettings() {
+        window.location.href = "settings.html";
+      }
+
+      // ================= NOTIFICATION =================
+      function showNotification(message, type = "info") {
+        const div = document.createElement("div");
+
+        div.innerHTML = message;
+        div.style.position = "fixed";
+        div.style.top = "20px";
+        div.style.right = "20px";
+        div.style.padding = "12px 20px";
+        div.style.borderRadius = "8px";
+        div.style.color = "#fff";
+        div.style.fontWeight = "bold";
+        div.style.zIndex = "9999";
+
+        //  COLORS
+        if (type === "success")
+          div.style.background = "#28a745"; // green
+        else if (type === "danger")
+          div.style.background = "#dc3545"; // red
+        else div.style.background = "#333";
+
+        document.body.appendChild(div);
+
+        if (soundEnabled) {
+          const audio = new Audio(
+            "https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3",
+          );
+          audio.play().catch(() => {});
+        }
+        setTimeout(() => div.remove(), 3000);
+      }
+
+      // ================= INIT =================
+
+      async function syncJobs() {
+        if (syncLock) return;
+        syncLock = true;
+
+        try {
+          const res = await fetch("http://localhost:5000/jobs");
+          const newJobs = await res.json();
+
+          const sortedJobs = [...newJobs].sort(
+            (a, b) => new Date(b.created_at) - new Date(a.created_at),
+          );
+
+          const nextSnapshot = JSON.stringify(sortedJobs);
+          if (nextSnapshot === jobsSnapshot) return;
+
+          jobsSnapshot = nextSnapshot;
+          allJobs = sortedJobs;
+
+          buildNotificationsFromJobs(sortedJobs);
+          updateNotifBadge();
+        } finally {
+          syncLock = false;
+        }
+      }
+      function saveSeen() {
+        localStorage.setItem(seenKey, JSON.stringify(seenNotificationIds));
+      }
+      function scheduleSync() {
+        clearTimeout(syncTimer);
+        syncTimer = setTimeout(syncJobs, 200);
+      }
+
+      function safeArray(key) {
+        try {
+          return JSON.parse(localStorage.getItem(key)) || [];
+        } catch {
+          return [];
+        }
+      }
+
+      const seenKey = `seenNotificationIds_${currentUser.id}`;
+      let seenNotificationIds = safeArray(seenKey);
+
+      function saveSeen() {
+        localStorage.setItem(seenKey, JSON.stringify(seenNotificationIds));
+      }
+      renderNotifMenu();
+      updateNotifBadge();
+      loadJobs();
+      setInterval(() => {
+        if (Date.now() < syncPausedUntil) return;
+        if (chatActive) return;
+        syncJobs();
+      }, 10000);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

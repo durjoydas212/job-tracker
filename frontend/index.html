@@ -1,0 +1,1268 @@
+<!doctype html>
+<html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Job Tracker</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      input,
+      select,
+      textarea {
+        font-size: 16px !important;
+        padding: 12px !important;
+      }
+
+      .card {
+        border-radius: 12px;
+      }
+
+      h5 {
+        font-weight: 600;
+      }
+      .table-responsive {
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+
+  <body class="bg-light">
+    <!-- nav  -->
+
+    <nav
+      class="navbar navbar-light bg-white px-4 py-3 border-bottom position-fixed w-100 top-0 z-3"
+    >
+      <div class="d-flex align-items-center gap-2">
+        <img
+          src="https://allweatherseal.com/wp-content/uploads/2025/12/aws_logo_full_color_outline_no_tag.svg"
+          style="height: 48px"
+          alt="Logo"
+        />
+      </div>
+
+      <div class="ms-auto d-flex align-items-center gap-3">
+        <div class="dropdown">
+          <ul
+            class="dropdown-menu dropdown-menu-end p-0"
+            id="notifMenu"
+            aria-labelledby="notifBtn"
+            style="min-width: 320px; max-height: 320px; overflow-y: auto"
+          >
+            <li class="dropdown-header fw-bold">Notifications</li>
+            <li><hr class="dropdown-divider m-0" /></li>
+            <li>
+              <span class="dropdown-item-text text-muted"
+                >No notifications yet</span
+              >
+            </li>
+          </ul>
+        </div>
+
+        <div class="dropdown">
+          <button
+            class="btn btn-outline-dark rounded-circle d-flex align-items-center justify-content-center"
+            type="button"
+            id="profileBtn"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            style="width: 42px; height: 42px"
+          >
+            👤
+          </button>
+
+          <ul
+            class="dropdown-menu dropdown-menu-end p-3"
+            aria-labelledby="profileBtn"
+            style="min-width: 220px"
+          >
+            <li class="fw-bold">Profile</li>
+            <li class="text-muted small" id="profileUserId">User</li>
+            <li><hr class="dropdown-divider" /></li>
+            <li>
+              <button class="btn btn-sm btn-danger w-100" onclick="logout()">
+                Logout
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container mt-5 pt-3">
+      <div class="card p-3 shadow-sm mt-5 pt-5">
+        <h5 class="text-center pt-3 pb-3 fw-bold">Job Tracker</h5>
+
+        <input
+          id="jobNumber"
+          class="form-control mb-2"
+          placeholder="Job Number"
+        />
+
+        <select id="status" class="form-select mb-2" onchange="handleStatus()">
+          <option value="">Select Status</option>
+          <option value="Started">Started</option>
+          <option value="Incomplete">Incomplete</option>
+          <option value="Complete">Complete</option>
+        </select>
+
+        <!-- ================= STARTED ================= -->
+        <div id="startedSection" style="display: none">
+          <label>Walkthrough Approved?</label>
+
+          <select
+            id="walkthrough"
+            class="form-select mb-2"
+            onchange="handleWalkthrough()"
+          >
+            <option value="">Select</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+
+          <div id="startedDetails" style="display: none">
+            <textarea
+              id="notes"
+              class="form-control mb-2"
+              placeholder="Notes"
+            ></textarea>
+
+            <select id="tag1" class="form-select mb-2">
+              <option value="">Tag Type</option>
+              <option>Before</option>
+              <option>After</option>
+              <option>Issue</option>
+            </select>
+
+            <select id="tag2" class="form-select mb-2">
+              <option value="">Product</option>
+              <option>Window</option>
+              <option>Doors</option>
+              <option>Siding</option>
+              <option>Roof</option>
+              <option>Deck</option>
+              <option>Patio Door Wall</option>
+              <option>Other</option>
+            </select>
+
+            <input
+              type="file"
+              id="imageFile"
+              multiple
+              class="form-control mb-2"
+            />
+            <input
+              type="text"
+              id="imageTags"
+              placeholder="Enter tags (comma separated)"
+              class="w-100"
+            />
+          </div>
+        </div>
+
+        <!-- ================= INCOMPLETE ================= -->
+        <div id="incompleteSection" style="display: none">
+          <h6>TIME</h6>
+
+          <select id="timeNeeded" class="form-select mb-2">
+            <option value="">Time Needed</option>
+            <option>1 hr</option>
+            <option>2 hr</option>
+            <option>3 hr</option>
+            <option>4+ hr</option>
+          </select>
+
+          <select id="installers" class="form-select mb-2">
+            <option value="">Installers Needed</option>
+            <option>1</option>
+            <option>2</option>
+            <option>3</option>
+          </select>
+
+          <input
+            id="material"
+            class="form-control mb-2"
+            placeholder="Material Needed"
+          />
+
+          <textarea
+            id="incNotes"
+            class="form-control mb-2"
+            placeholder="Notes"
+          ></textarea>
+
+          <select id="incTag1" class="form-select mb-2">
+            <option>Before</option>
+            <option>After</option>
+            <option>Issue</option>
+          </select>
+
+          <select id="incTag2" class="form-select mb-2">
+            <option>Window</option>
+            <option>Doors</option>
+            <option>Siding</option>
+            <option>Roof</option>
+            <option>Deck</option>
+            <option>Patio Door Wall</option>
+            <option>Other</option>
+          </select>
+
+          <input type="file" id="incImage" class="form-control mb-2" multiple />
+          <input
+            type="text"
+            id="incTags"
+            placeholder="Enter tags (comma separated)"
+            class="w-100"
+          />
+        </div>
+
+        <!-- ================= COMPLETE ================= -->
+        <div id="completeSection" style="display: none">
+          <select id="cos" class="form-select mb-2">
+            <option value="">COS Signed?</option>
+            <option>Yes</option>
+            <option>No</option>
+          </select>
+
+          <select id="payment" class="form-select mb-2">
+            <option value="">Payment Collected?</option>
+            <option>Yes</option>
+            <option>No</option>
+          </select>
+
+          <select id="finance" class="form-select mb-2">
+            <option value="">Finance Paperwork Signed?</option>
+            <option>Yes</option>
+            <option>No</option>
+          </select>
+
+          <input
+            id="referral"
+            class="form-control mb-2"
+            placeholder="Referral"
+          />
+
+          <input
+            id="installersComplete"
+            class="form-control mb-2"
+            placeholder="Installers (comma separated)"
+          />
+
+          <textarea
+            id="completeNotes"
+            class="form-control mb-2"
+            placeholder="Notes"
+          ></textarea>
+
+          <input
+            type="file"
+            id="completeImage"
+            class="form-control mb-2"
+            multiple
+          />
+          <input
+            type="text"
+            id="comTags"
+            placeholder="Enter tags (comma separated)"
+            class="w-100"
+          />
+        </div>
+
+        <button
+          onclick="saveJob()"
+          class="btn btn-primary w-100 mt-3 fw-bold fs-5"
+        >
+          Submit
+        </button>
+      </div>
+      <hr />
+
+      <h6 class="fs-5 fw-bold pb-3">Job History :</h6>
+      <div id="history" class="mt-2"></div>
+      <div id="userInfo"></div>
+    </div>
+
+    <script>
+      const currentUser = JSON.parse(localStorage.getItem("user") || "null");
+
+      if (!currentUser || !currentUser.role) {
+        localStorage.removeItem("user");
+        window.location.replace("login.html");
+      }
+      let lastStatuses = {};
+      let lastData = "";
+      let soundEnabled = false;
+      const API = "http://localhost:5000";
+
+      document.addEventListener("submit", function (e) {
+        e.preventDefault();
+      });
+
+      document.addEventListener("click", () => {
+        soundEnabled = true;
+      });
+      document.body.style.scrollBehavior = "smooth";
+
+      // ================= STATUS HANDLER =================
+      function handleStatus() {
+        const status = document.getElementById("status").value;
+
+        document.getElementById("startedSection").style.display =
+          status === "Started" ? "block" : "none";
+
+        document.getElementById("incompleteSection").style.display =
+          status === "Incomplete" ? "block" : "none";
+
+        document.getElementById("completeSection").style.display =
+          status === "Complete" ? "block" : "none";
+      }
+
+      function handleWalkthrough() {
+        const value = document.getElementById("walkthrough").value;
+
+        document.getElementById("startedDetails").style.display =
+          value === "yes" || value === "no" ? "block" : "none";
+      }
+
+      // ================= IMAGE UPLOAD =================
+      async function uploadImage(file) {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        const res = await fetch("http://localhost:5000/jobs/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          alert("Image upload failed");
+          return "";
+        }
+
+        const data = await res.json();
+
+        return data.filePath;
+      }
+      async function uploadImages(files) {
+        const uploaded = [];
+
+        for (let file of files) {
+          const formData = new FormData();
+          formData.append("image", file);
+
+          const res = await fetch("http://localhost:5000/jobs/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!res.ok) {
+            alert("Image upload failed");
+            continue;
+          }
+
+          const data = await res.json();
+          uploaded.push(data.filePath);
+        }
+
+        return uploaded;
+      }
+      // id
+
+      if (!currentUser) {
+        window.location.href = "login.html";
+      }
+
+      document.getElementById("profileUserId").innerText =
+        currentUser.email ||
+        currentUser.phone ||
+        currentUser.name ||
+        `User #${currentUser.id}`;
+
+      function logout() {
+        localStorage.removeItem("user");
+        window.location.href = "login.html";
+      }
+
+      // ================= SAVE JOB =================
+      async function saveJob() {
+        try {
+          const job_number = document.getElementById("jobNumber").value;
+          const status = document.getElementById("status").value;
+
+          if (!job_number || !status) {
+            alert("Fill job number and status");
+            return;
+          }
+
+          const res = await fetch(`http://localhost:5000/jobs/${job_number}`);
+          const existingJobs = await res.json();
+
+          // prevent duplicate status
+          const alreadyExists = existingJobs.find((j) => j.status === status);
+
+          if (alreadyExists) {
+            alert("This status already exists for this job!");
+            return;
+          }
+
+          let data = {};
+          let notes = "";
+
+          // STARTED
+          if (status === "Started") {
+            const files = document.getElementById("imageFile").files;
+            const images = files.length ? await uploadImages(files) : [];
+
+            const tags = document
+              .getElementById("imageTags")
+              .value.split(",")
+              .map((t) => t.trim());
+
+            notes = document.getElementById("notes").value;
+
+            data = {
+              userPhone: currentUser.phone,
+              userId: currentUser.id,
+              walkthrough: document.getElementById("walkthrough").value,
+              tag1: document.getElementById("tag1").value,
+              tag2: document.getElementById("tag2").value,
+              images: images,
+              tags: tags,
+            };
+          }
+
+          // INCOMPLETE
+          if (status === "Incomplete") {
+            const files = document.getElementById("incImage").files;
+            const images = files.length ? await uploadImages(files) : [];
+
+            const tags = document
+              .getElementById("incTags")
+              .value.split(",")
+              .filter((t) => t.trim() !== "")
+              .map((t) => t.trim());
+
+            notes = document.getElementById("incNotes").value;
+
+            data = {
+              userPhone: currentUser.phone,
+              userId: currentUser.id,
+              time: document.getElementById("timeNeeded").value,
+              installers: document.getElementById("installers").value,
+              material: document.getElementById("material").value,
+              tag1: document.getElementById("incTag1").value,
+              tag2: document.getElementById("incTag2").value,
+              images: images,
+              tags: tags,
+            };
+          }
+          console.log("INCOMPLETE DATA:", data);
+
+          // COMPLETE
+          if (status === "Complete") {
+            const files = document.getElementById("completeImage").files;
+            const images = files.length ? await uploadImages(files) : [];
+
+            const tags = document
+              .getElementById("comTags")
+              .value.split(",")
+              .filter((t) => t.trim() !== "")
+              .map((t) => t.trim());
+
+            notes = document.getElementById("completeNotes").value;
+
+            data = {
+              userPhone: currentUser.phone,
+              userId: currentUser.id,
+              cos: document.getElementById("cos").value,
+              payment: document.getElementById("payment").value,
+              finance: document.getElementById("finance").value,
+              referral: document.getElementById("referral").value,
+              installers: document.getElementById("installersComplete").value,
+              images: images,
+              tags: tags,
+            };
+          }
+
+          await fetch("http://localhost:5000/jobs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ job_number, status, notes, data }),
+          });
+
+          alert("Saved successfully!");
+
+          // reset other fields
+          document.getElementById("status").value = "";
+
+          document.getElementById("notes").value = "";
+          document.getElementById("incNotes").value = "";
+          document.getElementById("completeNotes").value = "";
+
+          document.getElementById("imageFile").value = "";
+          document.getElementById("incImage").value = "";
+          document.getElementById("completeImage").value = "";
+
+          handleStatus();
+
+          loadHistory();
+        } catch (err) {
+          console.error(err);
+          alert("Error saving job");
+        }
+      }
+      // job images render
+      function renderJobImages(images = []) {
+        const imgs = Array.isArray(images) ? images : [];
+        if (!imgs.length) return "";
+
+        const total = imgs.length;
+
+        if (total === 1) {
+          return `
+      <img src="http://localhost:5000${imgs[0]}"
+           onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 0)'
+           style="width:100%; max-width:280px; border-radius:10px; margin-top:5px; cursor:pointer; display:block;">
+    `;
+        }
+
+        if (total === 2) {
+          return `
+      <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; max-width:280px; margin-top:5px;">
+        ${imgs
+          .map(
+            (img, i) => `
+          <img src="http://localhost:5000${img}"
+               onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, ${i})'
+               style="width:100%; height:140px; object-fit:cover; border-radius:8px; cursor:pointer;">
+        `,
+          )
+          .join("")}
+      </div>
+    `;
+        }
+
+        if (total === 3) {
+          return `
+      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:6px; max-width:280px; margin-top:5px;">
+        <img src="http://localhost:5000${imgs[0]}"
+             onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 0)'
+             style="grid-row:span 2; width:100%; height:244px; object-fit:cover; border-radius:8px; cursor:pointer;">
+        <img src="http://localhost:5000${imgs[1]}"
+             onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 1)'
+             style="width:100%; height:118px; object-fit:cover; border-radius:8px; cursor:pointer;">
+        <img src="http://localhost:5000${imgs[2]}"
+             onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 2)'
+             style="width:100%; height:118px; object-fit:cover; border-radius:8px; cursor:pointer;">
+      </div>
+    `;
+        }
+
+        const shown = imgs.slice(0, 4);
+
+        return `
+    <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; max-width:280px; margin-top:5px;">
+      ${shown
+        .map((img, i) => {
+          const isLast = i === 3 && total > 4;
+          return `
+          <div style="position:relative;">
+            <img src="http://localhost:5000${img}"
+                 onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, ${i})'
+                 style="width:100%; height:120px; object-fit:cover; border-radius:8px; cursor:pointer;">
+            ${
+              isLast
+                ? `<div onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, ${i})'
+                 style="position:absolute; inset:0; background:rgba(0,0,0,0.55); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:bold; border-radius:8px; cursor:pointer;">+${total - 4}</div>`
+                : ""
+            }
+          </div>
+        `;
+        })
+        .join("")}
+    </div>
+  `;
+      }
+
+      // ================= LOAD HISTORY =================
+      async function loadHistory() {
+        const job_number = document.getElementById("jobNumber").value;
+        let url = "http://localhost:5000/jobs";
+
+        if (job_number) {
+          url = `http://localhost:5000/jobs/${job_number}`;
+        }
+
+        const res = await fetch(url);
+        const jobs = await res.json();
+
+        const filteredJobs = jobs.filter(
+          (job) => job.data?.userPhone === currentUser.phone,
+        );
+
+        // sort latest first
+        filteredJobs.sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at),
+        );
+
+        const container = document.getElementById("history");
+        container.innerHTML = "";
+
+        // show ALL history
+        filteredJobs.forEach((job, index) => {
+          const d = job.data || {};
+          let tags = [];
+
+          if (d.tags) {
+            tags = Array.isArray(d.tags) ? d.tags : d.tags.split(",");
+          }
+
+          const jobId = job.job_number;
+          const currentStatus = job.status;
+
+          // notification only for latest item
+          if (
+            lastStatuses[jobId] !== undefined &&
+            lastStatuses[jobId] !== currentStatus &&
+            index === 0
+          ) {
+            if (
+              lastStatuses[jobId] !== undefined &&
+              lastStatuses[jobId] !== currentStatus
+            ) {
+              if (currentStatus === "Approved") {
+                showNotification(`Job #${job.job_number} Approved`, "success");
+              }
+
+              if (currentStatus === "Declined") {
+                showNotification(`Job #${job.job_number} Declined`, "danger");
+              }
+            }
+          }
+
+          lastStatuses[jobId] = currentStatus;
+
+          const date = new Date(job.created_at).toLocaleString("en-US", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          });
+
+          const statusColor =
+            job.status === "Approved"
+              ? "green"
+              : job.status === "Incomplete" && index === 0
+                ? "orange"
+                : "gray";
+
+          const div = document.createElement("div");
+          div.className = "card p-3 mb-3 border-2";
+          div.style.borderColor = statusColor;
+
+          div.innerHTML = `
+    <strong>Job #:</strong> ${job.job_number} <br>
+    <strong>Status:</strong> ${job.status} <br>
+    <strong>Admin Status:</strong>
+${
+  job.status === "Approved"
+    ? '<div class="bg-success text-white text-center rounded p-1">Approved</div>'
+    : job.status === "Declined"
+      ? '<div class="bg-danger text-white text-center rounded p-1">Declined</div>'
+      : '<div class="bg-warning text-dark text-center rounded p-1">Pending</div>'
+}
+    <br>
+    <strong>Notes:</strong> ${job.notes || "-"} <br>
+    <strong>Time:</strong> ${d.time || "-"} <br>
+    <strong>Material:</strong> ${d.material || "-"} <br>
+    <strong>Date:</strong> ${date} <br><br>
+    
+    ${renderJobImages(d.images)}
+        <br>
+
+<div
+  id="chat-${job.id}"
+  data-chat-box
+  style="
+    margin-top:12px;
+    background:#f5f7fb;
+    border-radius:16px;
+    padding:15px;
+    max-height:420px;
+    overflow-y:auto;
+    border:1px solid #e3e6ea;
+  ">
+  <b>Conversation:</b>
+ ${
+   d.messages && d.messages.length
+     ? d.messages
+         .map(
+           (msg) => `
+      <div style="
+        display:flex;
+        justify-content:${msg.sender === "admin" ? "flex-end" : "flex-start"};
+        margin:6px 0;
+      ">
+
+        <div style="
+          background:${msg.sender === "admin" ? "#f1f0f0" : "#dcf8c6"};
+          padding:10px;
+          border-radius:12px;
+          max-width:70%;
+          box-shadow:0 1px 2px rgba(0,0,0,0.1);
+        ">
+
+          ${msg.text ? `<div style="margin-bottom:5px;">${msg.text}</div>` : ""}
+
+          ${renderImages(msg.images || (msg.image ? [msg.image] : []))}
+
+          <div style="font-size:11px; color:#666; margin-top:5px; text-align:right;">
+            ${msg.time}
+          </div>
+        </div>
+      </div>
+    `,
+         )
+         .join("")
+     : "<div>No messages yet</div>"
+ }
+</div>
+
+
+<!-- IMAGE PREVIEW -->
+
+<div 
+  id="preview-container-${job.id}" 
+  style="
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:8px;
+    padding-top:8px;
+  "
+></div>
+
+<div style="display:flex; align-items:center; gap:8px; margin-top:10px;">
+
+  <!-- IMAGE ICON -->
+ <label style="cursor:pointer; font-size:20px;">
+  📎
+ <input 
+  type="file" 
+  id="img-${job.id}" 
+  multiple 
+  onchange="previewImages(${job.id})"
+  style="display:none;"
+>
+</label>
+
+
+  <!-- TEXT INPUT -->
+
+ <textarea 
+  id="reply-${job.id}"
+ onkeydown="handleEnter(event, ${job.id})"
+  placeholder="Type message..."
+  style="
+  flex:1;
+  border:none;
+  background:#fff;
+  border-radius:14px;
+  padding:14px;
+  resize:none;
+  height:54px;
+  outline:none;
+  box-shadow:0 2px 10px rgba(0,0,0,0.08);
+"></textarea>
+
+  <!-- SEND BUTTON -->
+  <button 
+  type="button"
+  onclick="sendMessage(${job.id}); return false;"
+    style="
+  background:#0d6efd;
+  color:white;
+  border:none;
+  border-radius:14px;
+  width:52px;
+  height:52px;
+  font-size:18px;
+  box-shadow:0 2px 8px rgba(13,110,253,0.3);
+">
+    ➤
+  </button>
+
+</div>
+  `;
+          container.appendChild(div);
+        });
+        window.openImage = function (src) {
+          const imgWindow = window.open("");
+          imgWindow.document.write(`
+    <img src="${src}" style="width:80%; background:black; margin:0 auto; display:block; ">
+  `);
+        };
+        setTimeout(() => {
+          const chatBox = container.querySelector("div[style*='overflow-y']");
+          if (chatBox) {
+            chatBox.scrollTop = chatBox.scrollHeight;
+          }
+        }, 100);
+      }
+      function renderImages(images = []) {
+        if (!images.length) return "";
+
+        const total = images.length;
+        const show = images.slice(0, 4);
+
+        // 1 image
+        if (total === 1) {
+          return `
+      <img 
+        src="http://localhost:5000${images[0]}"
+        onclick='openImageViewerFromDB(${JSON.stringify(images)}, 0)'
+        style="
+          width:100%;
+          max-width:280px;
+          border-radius:10px;
+          margin-top:5px;
+          cursor:pointer;
+        ">
+    `;
+        }
+
+        // multiple images
+        return `
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:4px;
+      max-width:280px;
+      margin-top:5px;
+    ">
+      ${show
+        .map((img, i) => {
+          const isLast = i === 3 && total > 4;
+
+          return `
+            <div style="position:relative;">
+              
+              <img 
+                src="http://localhost:5000${img}"
+                onclick='openImageViewerFromDB(${JSON.stringify(images)}, ${i})'
+                style="
+                  width:100%;
+                  height:120px;
+                  object-fit:cover;
+                  border-radius:8px;
+                  cursor:pointer;
+                "
+              >
+
+              ${
+                isLast
+                  ? `
+                <div 
+                  onclick='openImageViewerFromDB(${JSON.stringify(images)}, ${i})'
+                  style="
+                    position:absolute;
+                    top:0;
+                    left:0;
+                    width:100%;
+                    height:100%;
+                    background:rgba(0,0,0,0.6);
+                    color:white;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    font-size:20px;
+                    font-weight:bold;
+                    border-radius:8px;
+                    cursor:pointer;
+                  "
+                >
+                  +${total - 4}
+                </div>
+              `
+                  : ""
+              }
+
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+      }
+
+      // open image viewer from DB
+      window.openImageViewerFromDB = function (images, startIndex = 0) {
+        let current = startIndex;
+
+        const overlay = document.createElement("div");
+
+        overlay.style = `
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.9);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
+  `;
+
+        const img = document.createElement("img");
+
+        img.style = `
+    max-width:90%;
+    max-height:90%;
+    object-fit:contain;
+    border-radius:8px;
+  `;
+
+        function show(index) {
+          current = index;
+          img.src = "http://localhost:5000" + images[current];
+        }
+
+        show(current);
+
+        // PREV
+        const prev = document.createElement("div");
+        prev.innerHTML = "◀";
+        prev.style = `
+    position:absolute;
+    left:20px;
+    font-size:40px;
+    color:white;
+    cursor:pointer;
+  `;
+        prev.onclick = () => {
+          if (current > 0) show(current - 1);
+        };
+
+        // NEXT
+        const next = document.createElement("div");
+        next.innerHTML = "▶";
+        next.style = `
+    position:absolute;
+    right:20px;
+    font-size:40px;
+    color:white;
+    cursor:pointer;
+  `;
+        next.onclick = () => {
+          if (current < images.length - 1) show(current + 1);
+        };
+
+        // CLOSE
+        const close = document.createElement("div");
+        close.innerHTML = "✖";
+        close.style = `
+    position:absolute;
+    top:20px;
+    right:20px;
+    font-size:30px;
+    color:white;
+    cursor:pointer;
+  `;
+        close.onclick = () => overlay.remove();
+
+        overlay.appendChild(img);
+        overlay.appendChild(prev);
+        overlay.appendChild(next);
+        overlay.appendChild(close);
+
+        document.body.appendChild(overlay);
+      };
+
+      window.handleEnter = function (event, jobId) {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          event.stopPropagation();
+          sendMessage(jobId);
+          return false;
+        }
+      };
+
+      // send reply
+      window.sendMessage = async function (jobId) {
+        const textInput = document.getElementById(`reply-${jobId}`);
+        const fileInput = document.getElementById(`img-${jobId}`);
+
+        const text = textInput.value.trim();
+        const files = fileInput.files;
+
+        if (!text && !files.length) {
+          return false;
+        }
+
+        let imagePaths = [];
+
+        try {
+          // upload images
+          if (files.length) {
+            for (let i = 0; i < files.length; i++) {
+              const formData = new FormData();
+              formData.append("image", files[i]);
+
+              const uploadRes = await fetch(
+                "http://localhost:5000/jobs/upload",
+                {
+                  method: "POST",
+                  body: formData,
+                },
+              );
+
+              const uploadData = await uploadRes.json();
+
+              imagePaths.push(uploadData.filePath);
+            }
+          }
+
+          // send message
+          await fetch(`http://localhost:5000/jobs/message/${jobId}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              text,
+              images: imagePaths,
+              sender: "user",
+            }),
+          });
+
+          // clear fields
+          textInput.value = "";
+          fileInput.value = "";
+
+          const preview = document.getElementById(`preview-container-${jobId}`);
+
+          if (preview) {
+            preview.innerHTML = "";
+          }
+
+          const chatBox = textInput
+            .closest(".card")
+            .querySelector("[data-chat-box]");
+
+          const messageDiv = document.createElement("div");
+
+          messageDiv.style.display = "flex";
+          messageDiv.style.justifyContent = "flex-start";
+          messageDiv.style.margin = "6px 0";
+
+          messageDiv.innerHTML = `
+  <div style="
+    background:#dcf8c6;
+    padding:10px;
+    border-radius:12px;
+    max-width:70%;
+  ">
+
+    ${text ? `<div style="margin-bottom:5px;">${text}</div>` : ""}
+
+    ${imagePaths.length ? renderImages(imagePaths) : ""}
+
+    <div style="
+      font-size:11px;
+      color:#666;
+      margin-top:5px;
+      text-align:right;
+    ">
+      ${new Date().toLocaleTimeString()}
+    </div>
+  </div>
+`;
+
+          chatBox.appendChild(messageDiv);
+
+          chatBox.scrollTop = chatBox.scrollHeight;
+
+          // append message without rebuilding page
+
+          chatBox.scrollTop = chatBox.scrollHeight;
+
+          return false;
+        } catch (err) {
+          console.error(err);
+          alert("Send failed");
+
+          return false;
+        }
+      };
+
+      // preview images before sending
+
+      window.previewImages = function (jobId) {
+        const files = document.getElementById(`img-${jobId}`).files;
+        const container = document.getElementById(`preview-container-${jobId}`);
+        container.innerHTML = "";
+
+        if (!files.length) return;
+
+        const maxShow = 3;
+
+        for (let i = 0; i < Math.min(files.length, maxShow); i++) {
+          const wrapper = document.createElement("div");
+          wrapper.style.position = "relative";
+          wrapper.style.width = "60px";
+          wrapper.style.height = "60px";
+
+          const img = document.createElement("img");
+          img.src = URL.createObjectURL(files[i]);
+          img.style.width = "100%";
+          img.style.height = "100%";
+          img.style.objectFit = "cover";
+          img.style.borderRadius = "6px";
+          wrapper.appendChild(img);
+
+          // overlay ONLY on last visible (3rd)
+          if (i === maxShow - 1 && files.length > maxShow) {
+            const overlay = document.createElement("div");
+            overlay.innerText = `+${files.length - maxShow}`;
+            overlay.style.position = "absolute";
+            overlay.style.top = "0";
+            overlay.style.left = "0";
+            overlay.style.width = "100%";
+            overlay.style.height = "100%";
+            overlay.style.display = "flex";
+            overlay.style.alignItems = "center";
+            overlay.style.justifyContent = "center";
+            overlay.style.background = "rgba(0,0,0,0.6)";
+            overlay.style.color = "#fff";
+            overlay.style.fontWeight = "bold";
+            overlay.style.borderRadius = "6px";
+            overlay.style.cursor = "pointer";
+
+            overlay.onclick = () => openImagePreview(jobId, 2);
+
+            wrapper.appendChild(overlay);
+          }
+          img.onclick = () => openImagePreview(jobId, i);
+
+          container.appendChild(wrapper);
+        }
+      };
+
+      window.openImagePreview = function (jobId, startIndex = 0) {
+        const files = document.getElementById(`img-${jobId}`).files;
+
+        let current = startIndex;
+
+        const overlay = document.createElement("div");
+        overlay.style = `
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.9);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
+  `;
+
+        const img = document.createElement("img");
+        img.style = `
+    max-width:90%;
+    max-height:90%;
+    object-fit:contain;
+    border-radius:8px;
+  `;
+
+        function showImage(index) {
+          current = index;
+          img.src = URL.createObjectURL(files[current]);
+        }
+
+        showImage(current);
+
+        // LEFT BUTTON
+        const prev = document.createElement("div");
+        prev.innerHTML = "◀";
+        prev.style = `
+    position:absolute;
+    left:20px;
+    font-size:40px;
+    color:white;
+    cursor:pointer;
+  `;
+        prev.onclick = () => {
+          if (current > 0) showImage(current - 1);
+        };
+
+        // RIGHT BUTTON
+        const next = document.createElement("div");
+        next.innerHTML = "▶";
+        next.style = `
+    position:absolute;
+    right:20px;
+    font-size:40px;
+    color:white;
+    cursor:pointer;
+  `;
+        next.onclick = () => {
+          if (current < files.length - 1) showImage(current + 1);
+        };
+
+        // CLOSE
+        const close = document.createElement("div");
+        close.innerHTML = "✖";
+        close.style = `
+    position:absolute;
+    top:20px;
+    right:20px;
+    font-size:20px;
+    color:red;
+    cursor:pointer;
+  `;
+        close.onclick = () => overlay.remove();
+
+        overlay.appendChild(img);
+        overlay.appendChild(prev);
+        overlay.appendChild(next);
+        overlay.appendChild(close);
+
+        document.body.appendChild(overlay);
+      };
+      // notification
+
+      function showNotification(message, type = "info") {
+        const div = document.createElement("div");
+
+        div.innerHTML = message;
+        div.style.position = "fixed";
+        div.style.top = "20px";
+        div.style.right = "20px";
+        div.style.padding = "12px 20px";
+        div.style.borderRadius = "8px";
+        div.style.color = "#fff";
+        div.style.fontWeight = "bold";
+        div.style.zIndex = "9999";
+
+        //  COLORS
+        if (type === "success")
+          div.style.background = "#28a745"; // green
+        else if (type === "danger")
+          div.style.background = "#dc3545"; // red
+        else div.style.background = "#333";
+
+        document.body.appendChild(div);
+
+        if (soundEnabled) {
+          const audio = new Audio(
+            "https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3",
+          );
+          audio.play().catch(() => {});
+        }
+      }
+
+      loadHistory();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

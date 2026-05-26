@@ -1,0 +1,323 @@
+<!doctype html>
+<html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>settings</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .Management {
+        margin-top: 50px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- nev bar  -->
+
+    <nav
+      class="navbar navbar-light bg-white px-4 py-3 border-bottom position-fixed w-100 top-0 z-3"
+    >
+      <div class="d-flex align-items-center gap-2">
+        <img
+          src="https://allweatherseal.com/wp-content/uploads/2025/12/aws_logo_full_color_outline_no_tag.svg"
+          style="height: 48px"
+        />
+      </div>
+
+      <div class="ms-auto d-flex align-items-center gap-3">
+        <button
+          type="button"
+          class="btn btn-outline-dark"
+          onclick="goAdmin()()"
+        >
+          Dashboard
+        </button>
+        <div class="dropdown">
+          <button
+            class="btn btn-outline-dark rounded-circle d-flex align-items-center justify-content-center"
+            type="button"
+            id="profileBtn"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            style="width: 42px; height: 42px"
+          >
+            👤
+          </button>
+
+          <ul
+            class="dropdown-menu dropdown-menu-end p-3"
+            aria-labelledby="profileBtn"
+            style="min-width: 220px"
+          >
+            <li class="fw-bold">Profile</li>
+            <li class="text-muted small" id="profileAdminId"></li>
+            <li><hr class="dropdown-divider" /></li>
+            <li>
+              <button class="btn btn-sm btn-danger w-100" onclick="logout()">
+                Logout
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <h2 class="container pt-5 pb-5 Management">User Management</h2>
+
+    <!-- ADD USER -->
+    <div class="container">
+      <div style="margin-bottom: 20px">
+        <input id="name" placeholder="Name" />
+        <input id="phone" placeholder="Phone" />
+        <input id="userPassword" placeholder="Password" />
+        <button onclick="addUser()">Add User</button>
+      </div>
+    </div>
+
+    <!-- USERS TABLE -->
+    <div class="container">
+      <table border="1" cellpadding="10" width="100% ">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Role</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="userTable"></tbody>
+      </table>
+    </div>
+
+    <hr />
+
+    <!-- MY ACCOUNT -->
+    <div class="my-account container">
+      <h3>My Account</h3>
+      <p id="myEmail"></p>
+      <div class="pass d-flex gap-3 mb-3">
+        <input
+          id="oldPassword"
+          class="form-control mb-2 w-25"
+          placeholder="Old Password"
+        />
+        <input
+          id="newPassword"
+          class="form-control mb-2 w-25"
+          placeholder="New Password"
+        />
+      </div>
+      <button onclick="changeMyPassword()" class="btn btn-primary">
+        Change Password
+      </button>
+    </div>
+
+    <script>
+      // ================= CURRENT USER =================
+      const currentUser = JSON.parse(localStorage.getItem("user"));
+
+      // PROTECT PAGE (only admin)
+      if (!currentUser || currentUser.role !== "admin") {
+        alert("Access denied");
+        window.location.href = "login.html";
+      }
+
+      // ================= SHOW CURRENT ADMIN =================
+      document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("myEmail").innerText =
+          currentUser.email || currentUser.phone;
+
+        loadUsers();
+      });
+
+      // ================= LOAD USERS =================
+      async function loadUsers() {
+        try {
+          const res = await fetch("http://localhost:5000/auth/users", {
+            headers: {
+              "x-admin-id": currentUser.id,
+            },
+          });
+          const users = await res.json();
+
+          const table = document.getElementById("userTable");
+          table.innerHTML = "";
+
+          users.forEach((user) => {
+            if (!user.phone) return;
+
+            table.innerHTML += `
+    <tr>
+      <td>${user.name || "-"}</td>
+      <td>${user.phone}</td>
+      <td>${user.role || "user"}</td>
+      <td>
+        <button onclick="deleteUser(${user.id})">Delete</button>
+      </td>
+    </tr>
+  `;
+          });
+        } catch (err) {
+          console.error(err);
+          alert("Error loading users");
+        }
+      }
+
+      // ================= ADD USER =================
+      async function addUser() {
+        const name = document.getElementById("name").value.trim();
+
+        const phone = document.getElementById("phone").value.trim();
+
+        const password = document.getElementById("userPassword").value.trim();
+
+        if (!phone || !password) {
+          alert("All fields required");
+          return;
+        }
+
+        try {
+          const res = await fetch("http://localhost:5000/auth/add-user", {
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json",
+              "x-admin-id": currentUser.id,
+            },
+
+            body: JSON.stringify({
+              name,
+              phone,
+              password,
+            }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            alert(data.message || "Add user failed");
+            return;
+          }
+
+          alert("User added");
+
+          loadUsers();
+
+          // CLEAR INPUTS
+          document.getElementById("name").value = "";
+          document.getElementById("phone").value = "";
+          document.getElementById("userPassword").value = "";
+        } catch (err) {
+          console.error(err);
+          alert("Server error");
+        }
+      }
+
+      // ================= DELETE USER =================
+
+      async function deleteUser(id) {
+        if (!confirm("Delete this user?")) return;
+
+        try {
+          await fetch(`http://localhost:5000/auth/user/${id}`, {
+            method: "DELETE",
+            headers: {
+              "x-admin-id": currentUser.id,
+            },
+          });
+
+          alert("User deleted");
+          loadUsers();
+        } catch (err) {
+          console.error(err);
+          alert("Error deleting user");
+        }
+      }
+
+      // ================= CHANGE OWN PASSWORD =================
+      async function changeMyPassword() {
+        const oldPassword = document.getElementById("oldPassword").value.trim();
+        const newPassword = document.getElementById("newPassword").value.trim();
+
+        if (!oldPassword || !newPassword) {
+          alert("Enter old password and new password");
+          return;
+        }
+
+        try {
+          const res = await fetch(
+            `http://localhost:5000/auth/change-password/${currentUser.id}`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                "x-user-id": currentUser.id,
+              },
+              body: JSON.stringify({
+                oldPassword,
+                newPassword,
+              }),
+            },
+          );
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            alert(data.message || "Error updating password");
+            return;
+          }
+
+          alert("Password updated successfully");
+          localStorage.removeItem("user");
+          window.location.href = "login.html";
+        } catch (err) {
+          console.error(err);
+          alert("Server error");
+        }
+      }
+
+      // PROTECT PAGE
+
+      if (!currentUser) {
+        window.location.href = "login.html";
+      }
+
+      // SHOW USER INFO
+      document.addEventListener("DOMContentLoaded", () => {
+        const info = currentUser.email || currentUser.phone;
+        document.getElementById("userInfo").innerText = info;
+      });
+
+      // LOGOUT
+      function logout() {
+        localStorage.removeItem("user");
+        window.location.href = "login.html";
+      }
+      const path = window.location.pathname;
+
+      document.querySelectorAll(".nav-link").forEach((link) => {
+        if (link.getAttribute("href") === path.split("/").pop()) {
+          link.classList.add("active");
+        }
+      });
+      // settings
+      function goAdmin() {
+        window.location.href = "admin.html";
+      }
+      function logout() {
+        localStorage.removeItem("user");
+        window.location.href = "login.html";
+      }
+      const adminLabel =
+        currentUser.email ||
+        currentUser.phone ||
+        currentUser.name ||
+        `Admin #${currentUser.id}`;
+      document.getElementById("profileAdminId").innerText = adminLabel;
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

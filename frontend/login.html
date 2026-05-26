@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      input,
+      select,
+      textarea {
+        font-size: 16px !important;
+        padding: 12px !important;
+      }
+
+      .card {
+        border-radius: 12px;
+      }
+
+      h5 {
+        font-weight: 600;
+      }
+      .table-responsive {
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+
+  <body class="bg-light">
+    <div class="container mt-5 w-50 text-center">
+      <div class="card p-3">
+        <h5>Login</h5>
+
+        <input
+          class="form-control mb-2"
+          required
+          id="emailOrPhone"
+          placeholder="Email or Phone"
+        />
+        <input
+          class="form-control mb-2"
+          required
+          id="password"
+          type="password"
+          placeholder="Password"
+        />
+
+        <button onclick="login()" class="btn btn-primary w-100">Login</button>
+      </div>
+    </div>
+
+
+
+
+
+
+
+    <script>
+      async function login() {
+        const emailOrPhone = document
+          .getElementById("emailOrPhone")
+          .value.trim();
+
+        const password = document.getElementById("password").value.trim();
+
+        if (!emailOrPhone || !password) {
+          alert("Enter email/phone and password");
+          return;
+        }
+
+        try {
+          const res = await fetch("http://localhost:5000/auth/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({
+              email: emailOrPhone.includes("@") ? emailOrPhone : "",
+
+              phone: emailOrPhone.includes("@") ? "" : emailOrPhone,
+
+              password: password,
+            }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            alert(data.message || "Login failed");
+            return;
+          }
+
+          // SAVE LOGIN
+          localStorage.setItem("user", JSON.stringify(data));
+
+          // REDIRECT BY ROLE
+          if (data.role === "admin") {
+            window.location.href = "admin.html";
+          } else {
+            window.location.href = "index.html";
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Server error");
+        }
+      }
+    </script>
+
+    <script>
+      
+    </script>
+    
+  </body>
+</html>
