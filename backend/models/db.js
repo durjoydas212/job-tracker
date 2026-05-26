@@ -1,7 +1,9 @@
 const path = require("path");
 const sqlite3 = require("@libsql/sqlite3").verbose();
 
-const db = new sqlite3.Database(path.join(__dirname, "..", "database.db"));
+const dbPath = "file:" + path.join(__dirname, "..", "database.db");
+
+const db = new sqlite3.Database(dbPath);
 
 db.serialize(() => {
   // ================= USERS TABLE =================
