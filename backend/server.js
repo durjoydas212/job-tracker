@@ -1,18 +1,34 @@
 require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 
-// DB INIT
+const app = express();
+
+// ================= DB INIT =================
 require("./models/db");
 
-const app = express();
+// ================= MIDDLEWARE =================
+app.use(cors());
+app.use(express.json());
+
+// ================= STATIC UPLOADS =================
+app.use("/uploads", express.static("uploads"));
+
+// ================= ROUTES =================
+const jobRoutes = require("./routes/jobs");
+const authRoutes = require("./routes/auth");
+
+app.use("/jobs", jobRoutes);
+app.use("/auth", authRoutes);
 
 // ================= MULTER SETUP =================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
   },
+
   filename: (req, file, cb) => {
     cb(null, Date.now() + "-" + file.originalname);
   },
@@ -20,21 +36,12 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// ================= ROUTES =================
-const jobRoutes = require("./routes/jobs");
-const authRoutes = require("./routes/auth");
-
-// ================= MIDDLEWARE =================
-app.use(cors());
-app.use(express.json());
-
-// ================= STATIC =================
-app.use("/uploads", express.static("uploads"));
-
-// ================= UPLOAD ROUTE (IMPORTANT) =================
+// ================= IMAGE UPLOAD ROUTE =================
 app.post("/upload", upload.single("image"), (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ message: "No file uploaded" });
+    return res.status(400).json({
+      message: "No file uploaded",
+    });
   }
 
   res.json({
@@ -42,14 +49,14 @@ app.post("/upload", upload.single("image"), (req, res) => {
   });
 });
 
-// ================= API ROUTES =================
-app.use("/jobs", jobRoutes);
-app.use("/auth", authRoutes);
-
+// ================= HOME ROUTE =================
 app.get("/", (req, res) => {
   res.send("API running...");
 });
 
-app.listen(5000, () => console.log("Server running on port 5000"));
+// ================= SERVER =================
+const PORT = process.env.PORT || 5000;
 
-
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
+});
