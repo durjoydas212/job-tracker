@@ -294,7 +294,7 @@
       let lastStatuses = {};
       let lastData = "";
       let soundEnabled = false;
-      const API = "http://localhost:5000";
+      const API = "https://job-tracker-production-43f2.up.railway.app";
 
       document.addEventListener("submit", function (e) {
         e.preventDefault();
@@ -331,7 +331,7 @@
         const formData = new FormData();
         formData.append("image", file);
 
-        const res = await fetch("http://localhost:5000/jobs/upload", {
+        const res = await fetch(`${API}/jobs/upload`, {
           method: "POST",
           body: formData,
         });
@@ -352,7 +352,7 @@
           const formData = new FormData();
           formData.append("image", file);
 
-          const res = await fetch("http://localhost:5000/jobs/upload", {
+          const res = await fetch(`${API}/jobs/upload`, {
             method: "POST",
             body: formData,
           });
@@ -396,7 +396,9 @@
             return;
           }
 
-          const res = await fetch(`http://localhost:5000/jobs/${job_number}`);
+          const res = await fetch(
+            `${API}/jobs/${job_number}`,
+          );
           const existingJobs = await res.json();
 
           // prevent duplicate status
@@ -486,7 +488,7 @@
             };
           }
 
-          await fetch("http://localhost:5000/jobs", {
+          await fetch(`${API}/jobs`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ job_number, status, notes, data }),
@@ -522,7 +524,7 @@
 
         if (total === 1) {
           return `
-      <img src="http://localhost:5000${imgs[0]}"
+      <img src="https://job-tracker-production-43f2.up.railway.app${imgs[0]}"
            onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 0)'
            style="width:100%; max-width:280px; border-radius:10px; margin-top:5px; cursor:pointer; display:block;">
     `;
@@ -534,7 +536,7 @@
         ${imgs
           .map(
             (img, i) => `
-          <img src="http://localhost:5000${img}"
+          <img src="https://job-tracker-production-43f2.up.railway.app${img}"
                onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, ${i})'
                style="width:100%; height:140px; object-fit:cover; border-radius:8px; cursor:pointer;">
         `,
@@ -547,13 +549,13 @@
         if (total === 3) {
           return `
       <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:6px; max-width:280px; margin-top:5px;">
-        <img src="http://localhost:5000${imgs[0]}"
+        <img src="https://job-tracker-production-43f2.up.railway.app${imgs[0]}"
              onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 0)'
              style="grid-row:span 2; width:100%; height:244px; object-fit:cover; border-radius:8px; cursor:pointer;">
-        <img src="http://localhost:5000${imgs[1]}"
+        <img src="https://job-tracker-production-43f2.up.railway.app${imgs[1]}"
              onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 1)'
              style="width:100%; height:118px; object-fit:cover; border-radius:8px; cursor:pointer;">
-        <img src="http://localhost:5000${imgs[2]}"
+        <img src="https://job-tracker-production-43f2.up.railway.app${imgs[2]}"
              onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 2)'
              style="width:100%; height:118px; object-fit:cover; border-radius:8px; cursor:pointer;">
       </div>
@@ -569,7 +571,7 @@
           const isLast = i === 3 && total > 4;
           return `
           <div style="position:relative;">
-            <img src="http://localhost:5000${img}"
+            <img src="https://job-tracker-production-43f2.up.railway.app${img}"
                  onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, ${i})'
                  style="width:100%; height:120px; object-fit:cover; border-radius:8px; cursor:pointer;">
             ${
@@ -589,10 +591,10 @@
       // ================= LOAD HISTORY =================
       async function loadHistory() {
         const job_number = document.getElementById("jobNumber").value;
-        let url = "http://localhost:5000/jobs";
+        let url = `${API}/jobs`;
 
         if (job_number) {
-          url = `http://localhost:5000/jobs/${job_number}`;
+          url = `${API}/jobs/${job_number}`;
         }
 
         const res = await fetch(url);
@@ -819,7 +821,7 @@ ${
         if (total === 1) {
           return `
       <img 
-        src="http://localhost:5000${images[0]}"
+        src="https://job-tracker-production-43f2.up.railway.app${images[0]}"
         onclick='openImageViewerFromDB(${JSON.stringify(images)}, 0)'
         style="
           width:100%;
@@ -848,7 +850,7 @@ ${
             <div style="position:relative;">
               
               <img 
-                src="http://localhost:5000${img}"
+                src="https://job-tracker-production-43f2.up.railway.app${img}"
                 onclick='openImageViewerFromDB(${JSON.stringify(images)}, ${i})'
                 style="
                   width:100%;
@@ -925,7 +927,7 @@ ${
 
         function show(index) {
           current = index;
-          img.src = "http://localhost:5000" + images[current];
+          img.src = API + images[current];
         }
 
         show(current);
@@ -1009,13 +1011,10 @@ ${
               const formData = new FormData();
               formData.append("image", files[i]);
 
-              const uploadRes = await fetch(
-                "http://localhost:5000/jobs/upload",
-                {
-                  method: "POST",
-                  body: formData,
-                },
-              );
+              const uploadRes = await fetch(`${API}/jobs/upload`, {
+                method: "POST",
+                body: formData,
+              });
 
               const uploadData = await uploadRes.json();
 
@@ -1024,17 +1023,20 @@ ${
           }
 
           // send message
-          await fetch(`http://localhost:5000/jobs/message/${jobId}`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
+          await fetch(
+            `https://job-tracker-production-43f2.up.railway.app/jobs/message/${jobId}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                text,
+                images: imagePaths,
+                sender: "user",
+              }),
             },
-            body: JSON.stringify({
-              text,
-              images: imagePaths,
-              sender: "user",
-            }),
-          });
+          );
 
           // clear fields
           textInput.value = "";

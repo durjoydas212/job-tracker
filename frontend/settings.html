@@ -28,11 +28,7 @@
       </div>
 
       <div class="ms-auto d-flex align-items-center gap-3">
-        <button
-          type="button"
-          class="btn btn-outline-dark"
-          onclick="goAdmin()()"
-        >
+        <button type="button" class="btn btn-outline-dark" onclick="goAdmin()">
           Dashboard
         </button>
         <div class="dropdown">
@@ -116,62 +112,50 @@
     </div>
 
     <script>
-      // ================= CURRENT USER =================
+      const API = "https://job-tracker-production-43f2.up.railway.app";
+
       const currentUser = JSON.parse(localStorage.getItem("user"));
 
-      // PROTECT PAGE (only admin)
       if (!currentUser || currentUser.role !== "admin") {
         alert("Access denied");
         window.location.href = "login.html";
       }
 
-      // ================= SHOW CURRENT ADMIN =================
       document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("myEmail").innerText =
-          currentUser.email || currentUser.phone;
-
+          currentUser.email || currentUser.phone || "-";
+        document.getElementById("profileAdminId").innerText =
+          currentUser.email ||
+          currentUser.phone ||
+          currentUser.name ||
+          `Admin #${currentUser.id}`;
         loadUsers();
       });
 
-      // ================= LOAD USERS =================
       async function loadUsers() {
-        try {
-          const res = await fetch("http://localhost:5000/auth/users", {
-            headers: {
-              "x-admin-id": currentUser.id,
-            },
-          });
-          const users = await res.json();
+        const res = await fetch(`${API}/auth/users`, {
+          headers: { "x-admin-id": currentUser.id },
+        });
+        const users = await res.json();
+        const table = document.getElementById("userTable");
+        table.innerHTML = "";
 
-          const table = document.getElementById("userTable");
-          table.innerHTML = "";
-
-          users.forEach((user) => {
-            if (!user.phone) return;
-
-            table.innerHTML += `
-    <tr>
-      <td>${user.name || "-"}</td>
-      <td>${user.phone}</td>
-      <td>${user.role || "user"}</td>
-      <td>
-        <button onclick="deleteUser(${user.id})">Delete</button>
-      </td>
-    </tr>
-  `;
-          });
-        } catch (err) {
-          console.error(err);
-          alert("Error loading users");
-        }
+        users.forEach((user) => {
+          if (!user.phone) return;
+          table.innerHTML += `
+        <tr>
+          <td>${user.name || "-"}</td>
+          <td>${user.phone}</td>
+          <td>${user.role || "user"}</td>
+          <td><button onclick="deleteUser(${user.id})">Delete</button></td>
+        </tr>
+      `;
+        });
       }
 
-      // ================= ADD USER =================
       async function addUser() {
         const name = document.getElementById("name").value.trim();
-
         const phone = document.getElementById("phone").value.trim();
-
         const password = document.getElementById("userPassword").value.trim();
 
         if (!phone || !password) {
@@ -179,65 +163,37 @@
           return;
         }
 
-        try {
-          const res = await fetch("http://localhost:5000/auth/add-user", {
-            method: "POST",
+        const res = await fetch(`${API}/auth/add-user`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-id": currentUser.id,
+          },
+          body: JSON.stringify({ name, phone, password }),
+        });
 
-            headers: {
-              "Content-Type": "application/json",
-              "x-admin-id": currentUser.id,
-            },
+        const data = await res.json();
+        if (!res.ok) return alert(data.message || "Add user failed");
 
-            body: JSON.stringify({
-              name,
-              phone,
-              password,
-            }),
-          });
-
-          const data = await res.json();
-
-          if (!res.ok) {
-            alert(data.message || "Add user failed");
-            return;
-          }
-
-          alert("User added");
-
-          loadUsers();
-
-          // CLEAR INPUTS
-          document.getElementById("name").value = "";
-          document.getElementById("phone").value = "";
-          document.getElementById("userPassword").value = "";
-        } catch (err) {
-          console.error(err);
-          alert("Server error");
-        }
+        alert("User added");
+        loadUsers();
+        document.getElementById("name").value = "";
+        document.getElementById("phone").value = "";
+        document.getElementById("userPassword").value = "";
       }
-
-      // ================= DELETE USER =================
 
       async function deleteUser(id) {
         if (!confirm("Delete this user?")) return;
 
-        try {
-          await fetch(`http://localhost:5000/auth/user/${id}`, {
-            method: "DELETE",
-            headers: {
-              "x-admin-id": currentUser.id,
-            },
-          });
+        await fetch(`${API}/auth/user/${id}`, {
+          method: "DELETE",
+          headers: { "x-admin-id": currentUser.id },
+        });
 
-          alert("User deleted");
-          loadUsers();
-        } catch (err) {
-          console.error(err);
-          alert("Error deleting user");
-        }
+        alert("User deleted");
+        loadUsers();
       }
 
-      // ================= CHANGE OWN PASSWORD =================
       async function changeMyPassword() {
         const oldPassword = document.getElementById("oldPassword").value.trim();
         const newPassword = document.getElementById("newPassword").value.trim();
@@ -247,76 +203,34 @@
           return;
         }
 
-        try {
-          const res = await fetch(
-            `http://localhost:5000/auth/change-password/${currentUser.id}`,
-            {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                "x-user-id": currentUser.id,
-              },
-              body: JSON.stringify({
-                oldPassword,
-                newPassword,
-              }),
+        const res = await fetch(
+          `${API}/auth/change-password/${currentUser.id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "x-user-id": currentUser.id,
             },
-          );
+            body: JSON.stringify({ oldPassword, newPassword }),
+          },
+        );
 
-          const data = await res.json();
+        const data = await res.json();
+        if (!res.ok) return alert(data.message || "Error updating password");
 
-          if (!res.ok) {
-            alert(data.message || "Error updating password");
-            return;
-          }
-
-          alert("Password updated successfully");
-          localStorage.removeItem("user");
-          window.location.href = "login.html";
-        } catch (err) {
-          console.error(err);
-          alert("Server error");
-        }
-      }
-
-      // PROTECT PAGE
-
-      if (!currentUser) {
-        window.location.href = "login.html";
-      }
-
-      // SHOW USER INFO
-      document.addEventListener("DOMContentLoaded", () => {
-        const info = currentUser.email || currentUser.phone;
-        document.getElementById("userInfo").innerText = info;
-      });
-
-      // LOGOUT
-      function logout() {
+        alert("Password updated successfully");
         localStorage.removeItem("user");
         window.location.href = "login.html";
       }
-      const path = window.location.pathname;
 
-      document.querySelectorAll(".nav-link").forEach((link) => {
-        if (link.getAttribute("href") === path.split("/").pop()) {
-          link.classList.add("active");
-        }
-      });
-      // settings
       function goAdmin() {
         window.location.href = "admin.html";
       }
+
       function logout() {
         localStorage.removeItem("user");
         window.location.href = "login.html";
       }
-      const adminLabel =
-        currentUser.email ||
-        currentUser.phone ||
-        currentUser.name ||
-        `Admin #${currentUser.id}`;
-      document.getElementById("profileAdminId").innerText = adminLabel;
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   </body>

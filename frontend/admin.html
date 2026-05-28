@@ -180,6 +180,8 @@
     </div>
 
     <script>
+      const API = "https://job-tracker-production-43f2.up.railway.app";
+      let syncTimer = null;
       let jobsSnapshot = "";
       document.addEventListener("submit", function (e) {
         e.preventDefault();
@@ -397,7 +399,7 @@
 
       async function loadJobs() {
         try {
-          const res = await fetch("http://localhost:5000/jobs");
+          const res = await fetch(`${API}/jobs`);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
           const newJobs = await res.json();
@@ -609,7 +611,6 @@
 
       // ================= FILTER =================
       function filterJobs() {
-        document.getElementById("searchInput").value.toLowerCase();
         const search = document
           .getElementById("searchInput")
           .value.toLowerCase();
@@ -632,7 +633,7 @@
         if (!path) return "";
         if (path.startsWith("http://") || path.startsWith("https://"))
           return path;
-        return `http://localhost:5000${path.startsWith("/") ? path : "/" + path}`;
+        return `${API}${path.startsWith("/") ? path : "/" + path}`;
       }
 
       function renderImages(images = []) {
@@ -798,7 +799,6 @@
         .join("")}
     </div>
   `;
-        onclick = "openImageViewerFromDB(${JSON.stringify(imgs)}, ${i})";
       }
 
       window.openImageViewerFromDB = function (images, startIndex = 0) {
@@ -914,6 +914,7 @@
             dateStyle: "medium",
             timeStyle: "short",
           });
+          let actionHTML = "";
 
           if (job.status === "Approved") {
             actionHTML = `
@@ -1077,7 +1078,7 @@
                 src="${
                   img.startsWith("http://") || img.startsWith("https://")
                     ? img
-                    : `http://localhost:5000${img}`
+                    : `${API}${img}`
                 }"
                 onclick='openSubmittedSlider(${JSON.stringify(images)}, ${i})'
                 style="width:100%; height:100px; object-fit:cover; border-radius:6px; cursor:pointer;"
@@ -1261,7 +1262,7 @@ ${
           .map((img) =>
             img.startsWith("http://") || img.startsWith("https://")
               ? img
-              : `http://localhost:5000${img}`,
+              : `${API}${img}`,
           )
           .filter(Boolean);
 
@@ -1385,7 +1386,7 @@ ${
 
         try {
           const res = await fetch(
-            `http://localhost:5000/jobs/delete-job/${encodeURIComponent(jobNumber)}`,
+            `${API}/jobs/delete-job/${encodeURIComponent(jobNumber)}`,
             {
               method: "DELETE",
             },
@@ -1404,7 +1405,7 @@ ${
 
       // ================= APPROVE =================
       async function approve(jobId) {
-        await fetch(`http://localhost:5000/jobs/${jobId}`, {
+        await fetch(`${API}/jobs/${jobId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -1433,7 +1434,7 @@ ${
 
       // ================= DECLINE =================
       async function decline(jobId) {
-        await fetch(`http://localhost:5000/jobs/${jobId}`, {
+        await fetch(`${API}/jobs/${jobId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -1461,7 +1462,7 @@ ${
 
       // ================= RESEND =================
       async function resendJob(id) {
-        await fetch(`http://localhost:5000/jobs/${id}`, {
+        await fetch(`${API}/jobs/${id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -1519,7 +1520,7 @@ ${
 
           formData.append("image", file);
 
-          const uploadRes = await fetch("http://localhost:5000/jobs/upload", {
+          const uploadRes = await fetch(`${API}/jobs/upload`, {
             method: "POST",
             body: formData,
           });
@@ -1548,7 +1549,7 @@ ${
         ];
 
         // SAVE
-        await fetch(`http://localhost:5000/jobs/${jobId}`, {
+        await fetch(`${API}/jobs/${jobId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -1648,7 +1649,7 @@ ${
       };
 
       window.refreshChats = async function () {
-        const res = await fetch("http://localhost:5000/jobs");
+        const res = await fetch(`${API}/jobs`);
         const jobs = await res.json();
 
         jobs.forEach((job) => {
@@ -1734,7 +1735,7 @@ ${
         syncLock = true;
 
         try {
-          const res = await fetch("http://localhost:5000/jobs");
+          const res = await fetch(`${API}/jobs`);
           const newJobs = await res.json();
 
           const sortedJobs = [...newJobs].sort(
@@ -1772,9 +1773,6 @@ ${
       const seenKey = `seenNotificationIds_${currentUser.id}`;
       let seenNotificationIds = safeArray(seenKey);
 
-      function saveSeen() {
-        localStorage.setItem(seenKey, JSON.stringify(seenNotificationIds));
-      }
       renderNotifMenu();
       updateNotifBadge();
       loadJobs();
