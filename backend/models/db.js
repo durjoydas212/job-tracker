@@ -27,6 +27,20 @@ db.serialize(() => {
     ('Taylor', 'Taylorr@allweatherseal.com', '123456', 'admin'),
     ('Miraj', 'Mirajep@allweatherseal.com', '123456', 'admin')
   `);
+  // ================= RESET ADMIN PASSWORDS =================
+  const adminPassword = bcrypt.hashSync("123456", 10);
+
+  db.run(
+    "UPDATE users SET password=? WHERE role='admin'",
+    [adminPassword],
+    function (err) {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log("All admin passwords updated");
+      }
+    },
+  );
 
   // ================= JOBS TABLE =================
   db.run(`

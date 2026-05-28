@@ -241,7 +241,7 @@ router.put("/change-password/:id", requireSelfOrAdmin, (req, res) => {
 });
 
 // ================= REMOVE THIS ROUTE IF NOT NEEDED =================
-// Better not keep a public password reset route in real use.
+
 router.get("/fix-all-passwords", requireAdmin, async (req, res) => {
   try {
     const hash = await bcrypt.hash("123456", 10);
