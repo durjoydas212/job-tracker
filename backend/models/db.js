@@ -1,5 +1,6 @@
 const path = require("path");
 const sqlite3 = require("sqlite3").verbose();
+const bcrypt = require("bcrypt");
 
 const db = new sqlite3.Database(
   path.join(__dirname, "..", "..", "database.db"),
@@ -27,6 +28,7 @@ db.serialize(() => {
     ('Taylor', 'Taylorr@allweatherseal.com', '123456', 'admin'),
     ('Miraj', 'Mirajep@allweatherseal.com', '123456', 'admin')
   `);
+
   // ================= RESET ADMIN PASSWORDS =================
   const adminPassword = bcrypt.hashSync("123456", 10);
 
@@ -63,11 +65,6 @@ db.serialize(() => {
       tag TEXT
     )
   `);
-  db.run(`
-  UPDATE users 
-  SET password = '1234566' 
-  WHERE email = 'Brianb@allweatherseal.com'
-`);
 });
 
 module.exports = db;
