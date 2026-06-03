@@ -205,39 +205,55 @@ ${jobLink}`,
 });
 router.post("/message/:id", async (req, res) => {
   const { text, image, images, sender } = req.body;
+  const id = req.params.id;
 
-  db.get(
-    "SELECT * FROM jobs WHERE job_number=(SELECT job_number FROM jobs WHERE id=?) ORDER BY id DESC LIMIT 1",
-    [req.params.id],
-    (err, row) => {
-      if (err) return res.status(500).send(err);
-      if (!row) return res.status(404).send("Job not found");
+  db.get("SELECT * FROM jobs WHERE id=?", [id], (err, row) => {
+    if (err) return res.status(500).send(err);
+    if (!row) return res.status(404).send("Job not found");
 
-      let data = {};
-      try {
-        data = JSON.parse(row.data || "{}");
-      } catch {}
+    let data = {};
+    try {
+      data = JSON.parse(row.data || "{}");
+    } catch {}
 
-      if (!data.messages) data.messages = [];
+    if (!data.messages) data.messages = [];
 
-      data.messages.push({
-        sender,
-        text,
-        images: images || (image ? [image] : []),
-        time: new Date().toLocaleString(),
-      });
+    data.messages.push({
+      sender,
+      text,
+      images: images || (image ? [image] : []),
+      time: new Date().toLocaleString(),
+    });
 
-      db.run(
-        "UPDATE jobs SET data=? WHERE id=?",
-        [JSON.stringify(data), row.id],
-        function (err) {
-          if (err) return res.status(500).send(err);
+    db.run(
+      "UPDATE jobs SET data=? WHERE id=?",
+      [JSON.stringify(data), id],
+      async function (err) {
+        if (err) return res.status(500).send(err);
 
-          res.send({ success: true });
+        try {
+          const userPhone = data.userPhone;
+
+          if (userPhone && sender === "admin") {
+            const jobLink = getJobLink();
+            await sendSms(
+              userPhone,
+              `New message for Job #${row.job_number}
+
+${text || "Image sent"}
+
+Open Job:
+${jobLink}`,
+            );
+          }
+        } catch (smsErr) {
+          console.log("SMS ERROR:", smsErr.message);
         }
-      );
-    }
-  );
+
+        res.send({ success: true });
+      },
+    );
+  });
 });
 
 router.delete("/delete-job/:job_number", (req, res) => {

@@ -294,8 +294,7 @@
       let lastStatuses = {};
       let lastData = "";
       let soundEnabled = false;
-      let allJobs = [];
-      const API = "https://job-tracker-production-47e1.up.railway.app";
+      const API = "http://localhost:5000";
 
       document.addEventListener("submit", function (e) {
         e.preventDefault();
@@ -332,7 +331,7 @@
         const formData = new FormData();
         formData.append("image", file);
 
-        const res = await fetch(`${API}/jobs/upload`, {
+        const res = await fetch("http://localhost:5000/jobs/upload", {
           method: "POST",
           body: formData,
         });
@@ -353,7 +352,7 @@
           const formData = new FormData();
           formData.append("image", file);
 
-          const res = await fetch(`${API}/jobs/upload`, {
+          const res = await fetch("http://localhost:5000/jobs/upload", {
             method: "POST",
             body: formData,
           });
@@ -397,7 +396,7 @@
             return;
           }
 
-          const res = await fetch(`${API}/jobs/${job_number}`);
+          const res = await fetch(`http://localhost:5000/jobs/${job_number}`);
           const existingJobs = await res.json();
 
           // prevent duplicate status
@@ -487,7 +486,7 @@
             };
           }
 
-          await fetch(`${API}/jobs`, {
+          await fetch("http://localhost:5000/jobs", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ job_number, status, notes, data }),
@@ -523,7 +522,7 @@
 
         if (total === 1) {
           return `
-      <img src="https://job-tracker-production-47e1.up.railway.app${imgs[0]}"
+      <img src="http://localhost:5000${imgs[0]}"
            onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 0)'
            style="width:100%; max-width:280px; border-radius:10px; margin-top:5px; cursor:pointer; display:block;">
     `;
@@ -535,7 +534,7 @@
         ${imgs
           .map(
             (img, i) => `
-          <img src="https://job-tracker-production-47e1.up.railway.app${img}"
+          <img src="http://localhost:5000${img}"
                onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, ${i})'
                style="width:100%; height:140px; object-fit:cover; border-radius:8px; cursor:pointer;">
         `,
@@ -548,13 +547,13 @@
         if (total === 3) {
           return `
       <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:6px; max-width:280px; margin-top:5px;">
-        <img src="https://job-tracker-production-47e1.up.railway.app${imgs[0]}"
+        <img src="http://localhost:5000${imgs[0]}"
              onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 0)'
              style="grid-row:span 2; width:100%; height:244px; object-fit:cover; border-radius:8px; cursor:pointer;">
-        <img src="https://job-tracker-production-47e1.up.railway.app${imgs[1]}"
+        <img src="http://localhost:5000${imgs[1]}"
              onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 1)'
              style="width:100%; height:118px; object-fit:cover; border-radius:8px; cursor:pointer;">
-        <img src="https://job-tracker-production-47e1.up.railway.app${imgs[2]}"
+        <img src="http://localhost:5000${imgs[2]}"
              onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 2)'
              style="width:100%; height:118px; object-fit:cover; border-radius:8px; cursor:pointer;">
       </div>
@@ -570,7 +569,7 @@
           const isLast = i === 3 && total > 4;
           return `
           <div style="position:relative;">
-            <img src="https://job-tracker-production-47e1.up.railway.app${img}"
+            <img src="http://localhost:5000${img}"
                  onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, ${i})'
                  style="width:100%; height:120px; object-fit:cover; border-radius:8px; cursor:pointer;">
             ${
@@ -588,27 +587,19 @@
       }
 
       // ================= LOAD HISTORY =================
-      let draftReplies = {};
       async function loadHistory() {
         const job_number = document.getElementById("jobNumber").value;
-        let url = `${API}/jobs`;
+        let url = "http://localhost:5000/jobs";
 
         if (job_number) {
-          url = `${API}/jobs/${job_number}`;
+          url = `http://localhost:5000/jobs/${job_number}`;
         }
 
         const res = await fetch(url);
         const jobs = await res.json();
-        allJobs = jobs;
 
-        // 💡 THE REAL FIX: Find the logged-in user's jobs first to get their active job numbers
-        const userJobNumbers = jobs
-          .filter((job) => job.data?.userPhone === currentUser.phone)
-          .map((job) => job.job_number);
-
-        // Now, include ALL row entries matching those job numbers so admin updates are NEVER hidden!
-        const filteredJobs = jobs.filter((job) =>
-          userJobNumbers.includes(job.job_number),
+        const filteredJobs = jobs.filter(
+          (job) => job.data?.userPhone === currentUser.phone,
         );
 
         // sort latest first
@@ -617,20 +608,9 @@
         );
 
         const container = document.getElementById("history");
-        document.querySelectorAll('textarea[id^="reply-"]').forEach((t) => {
-          draftReplies[t.id] = t.value;
-        });
-
-        let savedScrollPositions = {};
-        filteredJobs.forEach((job) => {
-          const box = document.getElementById(`chat-${job.id}`);
-          if (box) {
-            savedScrollPositions[job.id] = box.scrollTop;
-          }
-        });
-
         container.innerHTML = "";
 
+        // show ALL history
         filteredJobs.forEach((job, index) => {
           const d = job.data || {};
           let tags = [];
@@ -703,15 +683,13 @@ ${
 <div
   id="chat-${job.id}"
   data-chat-box
-  style="
-    margin-top:12px;
-    background:#f5f7fb;
-    border-radius:16px;
-    padding:15px;
-    max-height:420px;
-    overflow-y:auto;
-    border:1px solid #e3e6ea;
-  ">
+   style="
+  margin-top:10px;
+  border-top:1px solid #ddd;
+  padding-top:10px;
+  max-height:200px;
+  overflow-y:auto;
+">
   <b>Conversation:</b>
  ${
    d.messages && d.messages.length
@@ -767,11 +745,11 @@ ${
   <!-- IMAGE ICON -->
  <label style="cursor:pointer; font-size:20px;">
   📎
-<input 
+ <input 
   type="file" 
   id="img-${job.id}" 
   multiple 
-  onchange="previewImages(this, ${job.id})"
+  onchange="previewImages(${job.id})"
   style="display:none;"
 >
 </label>
@@ -784,81 +762,46 @@ ${
  onkeydown="handleEnter(event, ${job.id})"
   placeholder="Type message..."
   style="
-  flex:1;
-  border:none;
-  background:#fff;
-  border-radius:14px;
-  padding:14px;
-  resize:none;
-  height:54px;
-  outline:none;
-  box-shadow:0 2px 10px rgba(0,0,0,0.08);
-"></textarea>
-
+    flex:1;
+    border-radius:20px;
+    padding:10px;
+    resize:none;
+    height:50px;
+    outline:none;
+  "></textarea>
 
   <!-- SEND BUTTON -->
   <button 
   type="button"
   onclick="sendMessage(${job.id}); return false;"
     style="
-  background:#0d6efd;
-  color:white;
-  border:none;
-  border-radius:14px;
-  width:52px;
-  height:52px;
-  font-size:18px;
-  box-shadow:0 2px 8px rgba(13,110,253,0.3);
-">
+      background:#007bff;
+      color:white;
+      border:none;
+      border-radius:50%;
+      width:40px;
+      height:40px;
+      font-size:16px;
+    ">
     ➤
   </button>
 
 </div>
   `;
           container.appendChild(div);
-          const draft = draftReplies[`reply-${job.id}`];
-
-          if (draft !== undefined) {
-            const textarea = document.getElementById(`reply-${job.id}`);
-            if (textarea) textarea.value = draft;
-          }
         });
-
         window.openImage = function (src) {
           const imgWindow = window.open("");
           imgWindow.document.write(`
-            <img src="${src}" style="width:80%; background:black; margin:0 auto; display:block; ">
-          `);
+    <img src="${src}" style="width:80%; background:black; margin:0 auto; display:block; ">
+  `);
         };
-
-        // 🛠️ STEP 2 FIX: Synchronously fix positions to kill the 1-second flicker loop
-        filteredJobs.forEach((job) => {
-          const chatBox = document.getElementById(`chat-${job.id}`);
-          if (!chatBox) return;
-
-          // Initialize state trackers if missing
-          if (isUserScrolling[job.id] === undefined) {
-            isUserScrolling[job.id] = false;
-          }
-
-          // Restore scroll positions instantly before the user can see a jump
-          if (
-            isUserScrolling[job.id] &&
-            savedScrollPositions[job.id] !== undefined
-          ) {
-            chatBox.scrollTop = savedScrollPositions[job.id];
-          } else {
+        setTimeout(() => {
+          const chatBox = container.querySelector("div[style*='overflow-y']");
+          if (chatBox) {
             chatBox.scrollTop = chatBox.scrollHeight;
           }
-
-          // Bind manual scroll sensor
-          chatBox.onscroll = () => {
-            const isAtBottom =
-              chatBox.scrollHeight - chatBox.scrollTop <=
-              chatBox.clientHeight + 20;
-            isUserScrolling[job.id] = !isAtBottom;
-          };
-        }); // Optimized browser frame delay window matching raw string processing
+        }, 100);
       }
       function renderImages(images = []) {
         if (!images.length) return "";
@@ -870,17 +813,15 @@ ${
         if (total === 1) {
           return `
       <img 
-  src="https://job-tracker-production-47e1.up.railway.app${images[0]}"
-  onclick='openImageViewerFromDB(${JSON.stringify(images)}, 0)'
-  style="
-    width:100%;
-    max-width:280px;
-    height: 180px; 
-    object-fit: cover;
-    border-radius:10px;
-    margin-top:5px;
-    cursor:pointer;
-  ">
+        src="http://localhost:5000${images[0]}"
+        onclick='openImageViewerFromDB(${JSON.stringify(images)}, 0)'
+        style="
+          width:100%;
+          max-width:280px;
+          border-radius:10px;
+          margin-top:5px;
+          cursor:pointer;
+        ">
     `;
         }
 
@@ -901,7 +842,7 @@ ${
             <div style="position:relative;">
               
               <img 
-                src="https://job-tracker-production-47e1.up.railway.app${img}"
+                src="http://localhost:5000${img}"
                 onclick='openImageViewerFromDB(${JSON.stringify(images)}, ${i})'
                 style="
                   width:100%;
@@ -978,7 +919,7 @@ ${
 
         function show(index) {
           current = index;
-          img.src = API + images[current];
+          img.src = "http://localhost:5000" + images[current];
         }
 
         show(current);
@@ -1047,75 +988,120 @@ ${
         const fileInput = document.getElementById(`img-${jobId}`);
 
         const text = textInput.value.trim();
-        const files = [...fileInput.files];
+        const files = fileInput.files;
 
-        if (!text && files.length === 0) return;
+        if (!text && !files.length) {
+          return false;
+        }
+
+        let imagePaths = [];
 
         try {
-          let imagePaths = [];
+          // upload images
+          if (files.length) {
+            for (let i = 0; i < files.length; i++) {
+              const formData = new FormData();
+              formData.append("image", files[i]);
 
-          // Upload images
-          for (const file of files) {
-            const formData = new FormData();
-            formData.append("image", file);
+              const uploadRes = await fetch(
+                "http://localhost:5000/jobs/upload",
+                {
+                  method: "POST",
+                  body: formData,
+                },
+              );
 
-            const uploadRes = await fetch(`${API}/jobs/upload`, {
-              method: "POST",
-              body: formData,
-            });
+              const uploadData = await uploadRes.json();
 
-            const uploadData = await uploadRes.json();
-
-            if (uploadData.filePath) {
               imagePaths.push(uploadData.filePath);
             }
           }
 
-          // Send message directly
-          const response = await fetch(`${API}/jobs/message/${jobId}`, {
+          // send message
+          await fetch(`http://localhost:5000/jobs/message/${jobId}`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              text: text,
+              text,
               images: imagePaths,
               sender: "user",
             }),
           });
 
-          if (!response.ok) {
-            throw new Error("Message send failed");
-          }
-
+          // clear fields
           textInput.value = "";
           fileInput.value = "";
 
           const preview = document.getElementById(`preview-container-${jobId}`);
-          if (preview) preview.innerHTML = "";
 
-          setTimeout(() => {
-            loadHistory();
-          }, 1000);
+          if (preview) {
+            preview.innerHTML = "";
+          }
+
+          const chatBox = textInput
+            .closest(".card")
+            .querySelector("[data-chat-box]");
+
+          const messageDiv = document.createElement("div");
+
+          messageDiv.style.display = "flex";
+          messageDiv.style.justifyContent = "flex-start";
+          messageDiv.style.margin = "6px 0";
+
+          messageDiv.innerHTML = `
+  <div style="
+    background:#dcf8c6;
+    padding:10px;
+    border-radius:12px;
+    max-width:70%;
+  ">
+
+    ${text ? `<div style="margin-bottom:5px;">${text}</div>` : ""}
+
+    ${imagePaths.length ? renderImages(imagePaths) : ""}
+
+    <div style="
+      font-size:11px;
+      color:#666;
+      margin-top:5px;
+      text-align:right;
+    ">
+      ${new Date().toLocaleTimeString()}
+    </div>
+  </div>
+`;
+
+          chatBox.appendChild(messageDiv);
+
+          chatBox.scrollTop = chatBox.scrollHeight;
+
+          // append message without rebuilding page
+
+          const chatBoxes = document.querySelectorAll("[data-chat-box]");
+
+          chatBoxes.forEach((box) => {
+            box.scrollTop = box.scrollHeight;
+          });
+
+          return false;
         } catch (err) {
           console.error(err);
-          alert("Failed to send message");
-        }
-      }; // preview images before sending
+          alert("Send failed");
 
-      window.previewImages = function (inputElement, jobId) {
+          return false;
+        }
+      };
+
+      // preview images before sending
+
+      window.previewImages = function (jobId) {
+        const files = document.getElementById(`img-${jobId}`).files;
         const container = document.getElementById(`preview-container-${jobId}`);
-        if (!container) return;
-
         container.innerHTML = "";
-        const files = inputElement.files;
 
-        if (!files.length) {
-          imageSelected = false; // Reset if empty
-          return;
-        }
-
-        imageSelected = true;
+        if (!files.length) return;
 
         const maxShow = 3;
 
@@ -1126,33 +1112,36 @@ ${
           wrapper.style.height = "60px";
 
           const img = document.createElement("img");
-          img.src = URL.createObjectURL(files[i]); // Creates clean browser context source
+          img.src = URL.createObjectURL(files[i]);
           img.style.width = "100%";
           img.style.height = "100%";
           img.style.objectFit = "cover";
           img.style.borderRadius = "6px";
-          img.style.cursor = "pointer";
-
-          // Bind image viewer window
-          img.onclick = () => openImagePreview(jobId, i);
           wrapper.appendChild(img);
 
-          // If there are more than 3 files, append a badge on the 3rd card
+          // overlay ONLY on last visible (3rd)
           if (i === maxShow - 1 && files.length > maxShow) {
             const overlay = document.createElement("div");
             overlay.innerText = `+${files.length - maxShow}`;
-            overlay.style = `
-        position:absolute; inset:0;
-        display:flex; align-items:center; justify-content:center;
-        background:rgba(0,0,0,0.6); color:#fff;
-        font-weight:bold; border-radius:6px; cursor:pointer;
-      `;
-            overlay.onclick = (e) => {
-              e.stopPropagation();
-              openImagePreview(jobId, maxShow - 1);
-            };
+            overlay.style.position = "absolute";
+            overlay.style.top = "0";
+            overlay.style.left = "0";
+            overlay.style.width = "100%";
+            overlay.style.height = "100%";
+            overlay.style.display = "flex";
+            overlay.style.alignItems = "center";
+            overlay.style.justifyContent = "center";
+            overlay.style.background = "rgba(0,0,0,0.6)";
+            overlay.style.color = "#fff";
+            overlay.style.fontWeight = "bold";
+            overlay.style.borderRadius = "6px";
+            overlay.style.cursor = "pointer";
+
+            overlay.onclick = () => openImagePreview(jobId, 2);
+
             wrapper.appendChild(overlay);
           }
+          img.onclick = () => openImagePreview(jobId, i);
 
           container.appendChild(wrapper);
         }
@@ -1269,28 +1258,9 @@ ${
           audio.play().catch(() => {});
         }
       }
-      let isTyping = false;
-      let imageSelected = false;
-      let isUserScrolling = {};
-      document.addEventListener("focusin", (e) => {
-        if (e.target.id && e.target.id.startsWith("reply-")) {
-          isTyping = true;
-        }
-      });
 
-      document.addEventListener("focusout", (e) => {
-        if (e.target.id && e.target.id.startsWith("reply-")) {
-          setTimeout(() => {
-            isTyping = false;
-          }, 1000);
-        }
-      });
-
-      setInterval(() => {
-        if (!isTyping && !imageSelected) {
-          loadHistory();
-        }
-      }, 5000);
+      loadHistory();
+      // setInterval(loadHistory, 5000);
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   </body>
