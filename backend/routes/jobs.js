@@ -207,53 +207,67 @@ router.post("/message/:id", async (req, res) => {
   const { text, image, images, sender } = req.body;
   const id = req.params.id;
 
-  db.get("SELECT * FROM jobs WHERE id=?", [id], (err, row) => {
-    if (err) return res.status(500).send(err);
-    if (!row) return res.status(404).send("Job not found");
+  db.get(
+    `
+    SELECT *
+    FROM jobs
+    WHERE job_number = (
+      SELECT job_number FROM jobs WHERE id=?
+    )
+    ORDER BY id DESC
+    LIMIT 1
+    `,
+    [id],
+    (err, row) => {
+      if (err) return res.status(500).send(err);
+      if (!row) return res.status(404).send("Job not found");
 
-    let data = {};
-    try {
-      data = JSON.parse(row.data || "{}");
-    } catch {}
+      let data = {};
 
-    if (!data.messages) data.messages = [];
+      try {
+        data = JSON.parse(row.data || "{}");
+      } catch {}
 
-    data.messages.push({
-      sender,
-      text,
-      images: images || (image ? [image] : []),
-      time: new Date().toLocaleString(),
-    });
+      if (!data.messages) data.messages = [];
 
-    db.run(
-      "UPDATE jobs SET data=? WHERE id=?",
-      [JSON.stringify(data), id],
-      async function (err) {
-        if (err) return res.status(500).send(err);
+      data.messages.push({
+        sender,
+        text,
+        images: images || (image ? [image] : []),
+        time: new Date().toLocaleString(),
+      });
 
-        try {
-          const userPhone = data.userPhone;
+      db.run(
+        "UPDATE jobs SET data=? WHERE id=?",
+        [JSON.stringify(data), row.id],
+        async function (err) {
+          if (err) return res.status(500).send(err);
 
-          if (userPhone && sender === "admin") {
-            const jobLink = getJobLink();
-            await sendSms(
-              userPhone,
-              `New message for Job #${row.job_number}
+          try {
+            const userPhone = data.userPhone;
+
+            if (userPhone && sender === "admin") {
+              const jobLink = getJobLink();
+
+              await sendSms(
+                userPhone,
+                `New message for Job #${row.job_number}
 
 ${text || "Image sent"}
 
 Open Job:
 ${jobLink}`,
-            );
+              );
+            }
+          } catch (smsErr) {
+            console.log("SMS ERROR:", smsErr.message);
           }
-        } catch (smsErr) {
-          console.log("SMS ERROR:", smsErr.message);
-        }
 
-        res.send({ success: true });
-      },
-    );
-  });
+          res.send({ success: true });
+        },
+      );
+    },
+  );
 });
 
 router.delete("/delete-job/:job_number", (req, res) => {
