@@ -168,11 +168,6 @@ router.put("/:id", (req, res) => {
       ...data,
     };
 
-    // KEEP OLD CHAT MESSAGES
-    if (oldData.messages) {
-      newData.messages = oldData.messages;
-    }
-
     db.run(
       `UPDATE jobs SET 
         status = COALESCE(?, status),
