@@ -207,16 +207,18 @@ router.post("/message/:id", async (req, res) => {
   const { text, image, images, sender } = req.body;
   const id = req.params.id;
 
+  // 🛠️ THE MASTER ROW FIX: Select the OLDEST, original row entry (id ASC) for this job number
+  // This guarantees ALL messages from both admin and user save to the exact same database string!
   db.get(
     `
-  SELECT *
-  FROM jobs
-  WHERE job_number = (
-    SELECT job_number FROM jobs WHERE id=?
-  )
-  ORDER BY id DESC
-  LIMIT 1
-  `,
+    SELECT *
+    FROM jobs
+    WHERE job_number = (
+      SELECT job_number FROM jobs WHERE id=?
+    )
+    ORDER BY id ASC
+    LIMIT 1
+    `,
     [id],
     (err, row) => {
       if (err) return res.status(500).send(err);
@@ -229,6 +231,7 @@ router.post("/message/:id", async (req, res) => {
 
       if (!data.messages) data.messages = [];
 
+      // Append the incoming data bubble array block safely without truncating historical rows
       data.messages.push({
         sender,
         text,
@@ -236,6 +239,7 @@ router.post("/message/:id", async (req, res) => {
         time: new Date().toLocaleString(),
       });
 
+      // Update the original master entry row directly using row.id
       db.run(
         "UPDATE jobs SET data=? WHERE id=?",
         [JSON.stringify(data), row.id],
@@ -249,12 +253,7 @@ router.post("/message/:id", async (req, res) => {
               const jobLink = getJobLink();
               await sendSms(
                 userPhone,
-                `New message for Job #${row.job_number}
-
-${text || "Image sent"}
-
-Open Job:
-${jobLink}`,
+                `New message for Job #${row.job_number}\n\n${text || "Image sent"}\n\nOpen Job:\n${jobLink}`,
               );
             }
           } catch (smsErr) {
