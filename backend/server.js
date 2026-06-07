@@ -6,6 +6,10 @@ const multer = require("multer");
 
 const app = express();
 
+const path = require("path");
+
+app.use(express.static(path.join(__dirname, "../frontend")));
+
 // ================= DB INIT =================
 require("./models/db");
 
@@ -51,7 +55,7 @@ app.post("/upload", upload.single("image"), (req, res) => {
 
 // ================= HOME ROUTE =================
 app.get("/", (req, res) => {
-  res.send("API running...");
+  res.sendFile(path.join(__dirname, "../frontend/login.html"));
 });
 
 // ================= SERVER =================
