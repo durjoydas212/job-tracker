@@ -183,9 +183,12 @@
       const API = "https://job-tracker-production-47e1.up.railway.app";
       let syncTimer = null;
       let jobsSnapshot = "";
+      let knownJobs = new Set();
+      let knownStatuses = {};
       document.addEventListener("submit", function (e) {
         e.preventDefault();
       });
+
       const currentUser = JSON.parse(localStorage.getItem("user") || "null");
 
       if (!currentUser) {
@@ -412,10 +415,18 @@
           // first load only
           if (!tableBuilt) {
             tableBuilt = true;
+
             lastJobs = JSON.parse(JSON.stringify(sortedJobs));
             allJobs = sortedJobs;
+
+            sortedJobs.forEach((job) => {
+              knownJobs.add(job.id);
+              knownStatuses[job.id] = job.status;
+            });
+
             filterJobs();
             buildNotificationsFromJobs(sortedJobs);
+
             return;
           }
           // update jobs + notifications
@@ -1549,16 +1560,15 @@ ${
         ];
 
         // SAVE
-        await fetch(`${API}/jobs/${jobId}`, {
-          method: "PUT",
+        await fetch(`${API}/jobs/message/${jobId}`, {
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            data: {
-              ...d,
-              messages: updatedMessages,
-            },
+            sender: "admin",
+            text,
+            images: uploadedImages,
           }),
         });
 
@@ -1656,40 +1666,129 @@ ${
           const chat = document.getElementById(`chat-${job.id}`);
           if (!chat) return;
 
+          const oldCount = Number(chat.dataset.msgCount || 0);
+
+          const newCount = job.data?.messages?.length || 0;
+
+          const isNearBottom =
+            chat.scrollHeight - chat.scrollTop - chat.clientHeight < 100;
+
           const d = job.data || {};
 
-          chat.innerHTML =
-            d.messages && d.messages.length
-              ? [...d.messages]
-                  .map(
-                    (msg) => `
-            <div style="
-              display:flex;
-              justify-content:${msg.sender === "admin" ? "flex-end" : "flex-start"};
-              margin:10px 0;
-            ">
-              <div style="
-                background:${msg.sender === "admin" ? "#dbeafe" : "#dcf8c6"};
-                padding:10px;
-                border-radius:12px;
-                max-width:75%;
-                word-break:break-word;
-              ">
-                ${msg.text ? `<div style="margin-bottom:6px;">${msg.text}</div>` : ""}
-                ${msg.images && msg.images.length ? renderImages(msg.images) : ""}
-                <div style="font-size:11px; color:#666; margin-top:5px; text-align:right;">
-                  ${msg.time}
-                </div>
-              </div>
-            </div>
-          `,
-                  )
-                  .join("")
-              : "<div>No messages yet</div>";
+          const messages = d.messages || [];
 
-          chat.scrollTop = chat.scrollHeight;
+          if (messages.length === 0) {
+            chat.innerHTML = `
+    <div style="
+      color:#666;
+      text-align:center;
+      padding:10px;
+    ">
+      No messages yet
+    </div>
+  `;
+          } else {
+            chat.innerHTML = renderChatMessages(messages);
+          }
+
+          chat.dataset.msgCount = newCount;
+
+          if (newCount > oldCount && isNearBottom) {
+            chat.scrollTop = chat.scrollHeight;
+          }
         });
       };
+      async function updateJobsOnly() {
+        try {
+          const res = await fetch(`${API}/jobs`);
+          const jobs = await res.json();
+
+          const newSnapshot = JSON.stringify(
+            jobs.map((j) => ({
+              id: j.id,
+              status: j.status,
+              updated: j.updated_at,
+            })),
+          );
+
+          if (newSnapshot === jobsSnapshot) return;
+
+          jobsSnapshot = newSnapshot;
+
+          jobs.forEach((job) => {
+            // NEW JOB
+            if (!knownJobs.has(job.id)) {
+              showNotification(`🆕 New Job #${job.job_number}`, "info");
+
+              knownJobs.add(job.id);
+            }
+
+            // STATUS CHANGE
+            if (knownStatuses[job.id] && knownStatuses[job.id] !== job.status) {
+              if (job.status === "Approved") {
+                showNotification(
+                  `✅ Job #${job.job_number} Approved`,
+                  "success",
+                );
+              } else if (job.status === "Declined") {
+                showNotification(
+                  `❌ Job #${job.job_number} Declined`,
+                  "danger",
+                );
+              } else if (job.status === "Rework") {
+                showNotification(`⚠️ Job #${job.job_number} Rework`, "info");
+              }
+            }
+
+            knownStatuses[job.id] = job.status;
+          });
+
+          allJobs = jobs;
+
+          filterJobs();
+        } catch (err) {
+          console.error("Job update failed", err);
+        }
+      }
+
+      function renderChatMessages(messages) {
+        if (!messages || messages.length === 0) {
+          return `
+      <div style="
+        color:#666;
+        text-align:center;
+        padding:10px;
+      ">
+        No messages yet
+      </div>
+    `;
+        }
+
+        return messages
+          .map(
+            (msg) => `
+      <div style="
+        display:flex;
+        justify-content:${msg.sender === "admin" ? "flex-end" : "flex-start"};
+        margin:10px 0;
+      ">
+        <div style="
+          background:${msg.sender === "admin" ? "#dbeafe" : "#dcf8c6"};
+          padding:10px;
+          border-radius:12px;
+          max-width:75%;
+        ">
+          ${msg.text || ""}
+          ${msg.images?.length ? renderImages(msg.images) : ""}
+          <div style="font-size:11px;color:#666;">
+            ${msg.time}
+          </div>
+        </div>
+      </div>
+    `,
+          )
+          .join("");
+      }
 
       // settings
       function goSettings() {
@@ -1776,11 +1875,21 @@ ${
       renderNotifMenu();
       updateNotifBadge();
       loadJobs();
-      setInterval(() => {
+      setInterval(async () => {
         if (Date.now() < syncPausedUntil) return;
         if (chatActive) return;
-        syncJobs();
-      }, 10000);
+
+        try {
+          await refreshChats();
+        } catch (err) {
+          console.error("Chat refresh failed", err);
+        }
+      }, 3000);
+      setInterval(async () => {
+        if (Date.now() < syncPausedUntil) return;
+
+        await updateJobsOnly();
+      }, 5000);
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   </body>

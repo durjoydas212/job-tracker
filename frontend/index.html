@@ -458,7 +458,6 @@
               tags: tags,
             };
           }
-          console.log("INCOMPLETE DATA:", data);
 
           // COMPLETE
           if (status === "Complete") {
@@ -633,17 +632,16 @@
             lastStatuses[jobId] !== currentStatus &&
             index === 0
           ) {
-            if (
-              lastStatuses[jobId] !== undefined &&
-              lastStatuses[jobId] !== currentStatus
-            ) {
-              if (currentStatus === "Approved") {
-                showNotification(`Job #${job.job_number} Approved`, "success");
-              }
+            if (currentStatus === "Approved") {
+              showNotification(`Job #${job.job_number} Approved`, "approved");
+            }
 
-              if (currentStatus === "Declined") {
-                showNotification(`Job #${job.job_number} Declined`, "danger");
-              }
+            if (currentStatus === "Declined") {
+              showNotification(`Job #${job.job_number} Declined`, "declined");
+            }
+
+            if (currentStatus === "Rework") {
+              showNotification(`Job #${job.job_number} Needs Rework`, "rework");
             }
           }
 
@@ -816,10 +814,9 @@ ${
   `);
         };
         setTimeout(() => {
-          const chatBox = container.querySelector("div[style*='overflow-y']");
-          if (chatBox) {
+          document.querySelectorAll("[data-chat-box]").forEach((chatBox) => {
             chatBox.scrollTop = chatBox.scrollHeight;
-          }
+          });
         }, 100);
       }
       function renderImages(images = []) {
@@ -1245,9 +1242,14 @@ ${
       // notification
 
       function showNotification(message, type = "info") {
+        const old = document.getElementById("job-notification");
+        if (old) old.remove();
+
         const div = document.createElement("div");
+        div.id = "job-notification";
 
         div.innerHTML = message;
+
         div.style.position = "fixed";
         div.style.top = "20px";
         div.style.right = "20px";
@@ -1256,24 +1258,50 @@ ${
         div.style.color = "#fff";
         div.style.fontWeight = "bold";
         div.style.zIndex = "9999";
+        div.style.boxShadow = "0 4px 12px rgba(0,0,0,.2)";
 
-        //  COLORS
-        if (type === "success")
-          div.style.background = "#28a745"; // green
-        else if (type === "danger")
-          div.style.background = "#dc3545"; // red
-        else div.style.background = "#333";
+        if (type === "approved") {
+          div.style.background = "#28a745";
+          div.innerHTML = "✅ " + message;
+        } else if (type === "declined") {
+          div.style.background = "#dc3545";
+          div.innerHTML = "❌ " + message;
+        } else if (type === "rework") {
+          div.style.background = "#ffc107";
+          div.style.color = "#000";
+          div.innerHTML = "⚠️ " + message;
+        } else {
+          div.style.background = "#333";
+        }
 
         document.body.appendChild(div);
 
         if (soundEnabled) {
-          const audio = new Audio(
-            "https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3",
-          );
-          audio.play().catch(() => {});
+          try {
+            const audio = new Audio(
+              "https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3",
+            );
+
+            audio.volume = 1;
+            audio.play().catch((err) => {
+              console.log("Sound blocked:", err);
+            });
+          } catch (err) {
+            console.log(err);
+          }
         }
+
+        setTimeout(() => {
+          div.style.opacity = "0";
+
+          setTimeout(() => {
+            div.remove();
+          }, 500);
+        }, 5000);
       }
+
       let isTyping = false;
+      let userReadingOldMessages = false;
 
       document.addEventListener("focusin", (e) => {
         if (e.target.id && e.target.id.startsWith("reply-")) {
@@ -1289,7 +1317,55 @@ ${
         }
       });
 
+      async function checkForUpdates() {
+        try {
+          const res = await fetch(`${API}/jobs?t=${Date.now()}`, {
+            cache: "no-store",
+          });
+
+          const jobs = await res.json();
+
+          const hash = JSON.stringify(
+            jobs.map((j) => ({
+              id: j.id,
+              status: j.status,
+              msgCount: j.data?.messages?.length || 0,
+            })),
+          );
+
+          if (hash !== lastData) {
+            console.log("UPDATE FOUND");
+
+            lastData = hash;
+
+            await loadHistory();
+          }
+        } catch (err) {
+          console.error("AUTO REFRESH ERROR:", err);
+        }
+      }
+
       loadHistory();
+
+      setInterval(async () => {
+        if (isTyping) return;
+
+        const fileInputs = document.querySelectorAll(
+          'input[type="file"][id^="img-"]',
+        );
+
+        for (const input of fileInputs) {
+          if (input.files && input.files.length > 0) {
+            return;
+          }
+        }
+
+        const oldScrollY = window.scrollY;
+
+        await checkForUpdates();
+
+        window.scrollTo(0, oldScrollY);
+      }, 3000);
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   </body>
