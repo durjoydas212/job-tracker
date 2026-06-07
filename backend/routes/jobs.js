@@ -24,7 +24,7 @@ async function sendSms(to, body) {
 }
 
 const getJobLink = () =>
-  process.env.FRONTEND_URL || "http://127.0.0.1:5500/frontend/index.html";
+  process.env.FRONTEND_URL || "https://job-tracker-production-47e1.up.railway.app/index.html";
 
 const multer = require("multer");
 const express = require("express");
