@@ -1180,7 +1180,15 @@ ${
     `,
         )
         .join("")
-    : "<div>No messages yet</div>"
+    : `
+<div style="
+  color:#666;
+  text-align:center;
+  padding:10px;
+">
+  No messages yet
+</div>
+`
 }
 
 </div>
@@ -1718,7 +1726,7 @@ ${
           jobs.forEach((job) => {
             // NEW JOB
             if (!knownJobs.has(job.id)) {
-              showNotification(`🆕 New Job #${job.job_number}`, "info");
+              showNotification(` New Job #${job.job_number}`, "info");
 
               knownJobs.add(job.id);
             }
@@ -1754,13 +1762,13 @@ ${
       function renderChatMessages(messages) {
         if (!messages || messages.length === 0) {
           return `
-      <div style="
-        color:#666;
-        text-align:center;
-        padding:10px;
-      ">
-        No messages yet
-      </div>
+     <div style="
+  color:#666;
+  text-align:center;
+  padding:10px;
+">
+  No messages yet
+</div>
     `;
         }
 
