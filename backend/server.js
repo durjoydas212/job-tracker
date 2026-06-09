@@ -60,7 +60,6 @@ app.get("/", (req, res) => {
 });
 
 // ================= TEST GOOGLE DRIVE =================
-const path = require("path");
 
 app.get("/test-drive", async (req, res) => {
   try {
@@ -77,7 +76,6 @@ app.get("/test-drive", async (req, res) => {
     res.status(500).json(err.message);
   }
 });
-
 // ================= SERVER =================
 const PORT = process.env.PORT || 8080;
 
