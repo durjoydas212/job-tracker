@@ -60,9 +60,13 @@ app.get("/", (req, res) => {
 });
 
 // ================= TEST GOOGLE DRIVE =================
+const path = require("path");
+
 app.get("/test-drive", async (req, res) => {
   try {
-    const fileId = await uploadFile("./uploads/test.jpg", "test-upload.jpg");
+    const filePath = path.join(__dirname, "config", "test.jpg");
+
+    const fileId = await uploadFile(filePath, "test-upload.jpg");
 
     res.json({
       success: true,
@@ -76,7 +80,6 @@ app.get("/test-drive", async (req, res) => {
 
 // ================= SERVER =================
 const PORT = process.env.PORT || 8080;
-
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
