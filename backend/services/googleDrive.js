@@ -29,9 +29,11 @@ async function uploadFile(filePath, fileName) {
     media: {
       body: fs.createReadStream(filePath),
     },
+    supportsAllDrives: true,
   });
 
   return response.data.id;
 }
+
 
 module.exports = { uploadFile };
