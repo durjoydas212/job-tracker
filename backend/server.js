@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
+const { uploadFile } = require("./services/googleDrive");
 
 const app = express();
 
@@ -56,6 +57,21 @@ app.post("/upload", upload.single("image"), (req, res) => {
 // ================= HOME ROUTE =================
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/login.html"));
+});
+
+// ================= TEST GOOGLE DRIVE =================
+app.get("/test-drive", async (req, res) => {
+  try {
+    const fileId = await uploadFile("./uploads/test.jpg", "test-upload.jpg");
+
+    res.json({
+      success: true,
+      fileId,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json(err.message);
+  }
 });
 
 // ================= SERVER =================
