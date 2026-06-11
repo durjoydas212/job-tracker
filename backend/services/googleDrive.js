@@ -67,4 +67,15 @@ async function uploadFile(filePath, fileName, jobNumber) {
 
   return response.data.id;
 }
+async function testFolder() {
+  return await drive.files.get({
+    fileId: ROOT_FOLDER_ID,
+    supportsAllDrives: true,
+  });
+}
+
+module.exports = {
+  uploadFile,
+  testFolder,
+};
 module.exports = { uploadFile };

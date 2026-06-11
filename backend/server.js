@@ -61,6 +61,23 @@ app.get("/", (req, res) => {
 
 // ================= TEST GOOGLE DRIVE =================
 
+const { uploadFile, testFolder } = require("./services/googleDrive");
+
+app.get("/test-folder", async (req, res) => {
+  try {
+    const result = await testFolder();
+    res.json(result.data);
+  } catch (err) {
+    res.status(500).json(err.message);
+  }
+});
+
+
+
+
+
+
+
 app.get("/test-drive", async (req, res) => {
   try {
     const filePath = path.join(__dirname, "config", "test.jpg");
