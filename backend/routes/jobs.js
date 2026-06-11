@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-
+const { uploadJobImagesToDrive } = require("../services/googleDrive");
 const twilio = require("twilio");
 
 const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_TOKEN);
@@ -24,7 +24,8 @@ async function sendSms(to, body) {
 }
 
 const getJobLink = () =>
-  process.env.FRONTEND_URL || "https://job-tracker-production-47e1.up.railway.app/index.html";
+  process.env.FRONTEND_URL ||
+  "https://job-tracker-production-47e1.up.railway.app/index.html";
 
 const multer = require("multer");
 const express = require("express");
@@ -314,6 +315,43 @@ router.delete("/delete-job/:job_number", (req, res) => {
       },
     );
   });
+});
+
+// google drive upload for job images
+router.post("/upload-drive/:id", async (req, res) => {
+  try {
+    const jobId = req.params.id;
+
+    db.get("SELECT * FROM jobs WHERE id=?", [jobId], async (err, row) => {
+      if (err) return res.status(500).send(err);
+
+      if (!row) {
+        return res.status(404).json({
+          success: false,
+          error: "Job not found",
+        });
+      }
+
+      const data = JSON.parse(row.data || "{}");
+
+      const result = await uploadJobImagesToDrive(
+        row.job_number,
+        data.images || [],
+      );
+
+      res.json({
+        success: true,
+        result,
+      });
+    });
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
 });
 
 module.exports = router;

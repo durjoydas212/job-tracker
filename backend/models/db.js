@@ -56,6 +56,21 @@ db.serialize(() => {
     )
   `);
 
+  // DRIVE COLUMNS
+  db.run(
+    `
+  ALTER TABLE jobs ADD COLUMN drive_uploaded INTEGER DEFAULT 0
+`,
+    (err) => {},
+  );
+
+  db.run(
+    `
+  ALTER TABLE jobs ADD COLUMN drive_folder_id TEXT
+`,
+    (err) => {},
+  );
+
   // ================= IMAGES TABLE =================
   db.run(`
     CREATE TABLE IF NOT EXISTS images (

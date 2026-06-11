@@ -18,8 +18,40 @@ const drive = google.drive({
   auth,
 });
 
-async function uploadFile(filePath, fileName) {
-  const folderId = "14QAo7wN9s2Dyy_GqiAOXB_ZUkirWytmM";
+async function findFolderByName(folderName) {
+  const response = await drive.files.list({
+    q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    fields: "files(id,name)",
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+  });
+
+  return response.data.files[0] || null;
+}
+
+async function createFolder(folderName) {
+  const folder = await drive.files.create({
+    requestBody: {
+      name: folderName,
+      mimeType: "application/vnd.google-apps.folder",
+      parents: [ROOT_FOLDER_ID],
+    },
+    supportsAllDrives: true,
+  });
+
+  return folder.data.id;
+}
+
+async function uploadFile(filePath, fileName, jobNumber) {
+  let folder = await findFolderByName(jobNumber);
+
+  let folderId;
+
+  if (folder) {
+    folderId = folder.id;
+  } else {
+    folderId = await createFolder(jobNumber);
+  }
 
   const response = await drive.files.create({
     requestBody: {
@@ -34,6 +66,4 @@ async function uploadFile(filePath, fileName) {
 
   return response.data.id;
 }
-
-
 module.exports = { uploadFile };

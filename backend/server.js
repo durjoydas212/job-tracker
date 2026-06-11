@@ -65,7 +65,7 @@ app.get("/test-drive", async (req, res) => {
   try {
     const filePath = path.join(__dirname, "config", "test.jpg");
 
-    const fileId = await uploadFile(filePath, "test-upload.jpg");
+    const fileId = await uploadFile(filePath, "test-upload.jpg", "445ED667");
 
     res.json({
       success: true,
