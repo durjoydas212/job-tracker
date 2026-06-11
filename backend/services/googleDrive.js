@@ -1,5 +1,6 @@
 const fs = require("fs");
 const { google } = require("googleapis");
+const ROOT_FOLDER_ID = "1JOjWuwkKZGO3vEU1H6AoXHulnpMouc_x";
 
 const auth = new google.auth.GoogleAuth({
   credentials: {
