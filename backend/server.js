@@ -58,40 +58,6 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/login.html"));
 });
 
-// ================= TEST GOOGLE DRIVE =================
-
-const { uploadFile, testFolder } = require("./services/googleDrive");
-
-app.get("/test-folder", async (req, res) => {
-  try {
-    const result = await testFolder();
-    res.json(result.data);
-  } catch (err) {
-    res.status(500).json(err.message);
-  }
-});
-
-
-
-
-
-
-
-app.get("/test-drive", async (req, res) => {
-  try {
-    const filePath = path.join(__dirname, "config", "test.jpg");
-
-    const fileId = await uploadFile(filePath, "test-upload.jpg", "445ED667");
-
-    res.json({
-      success: true,
-      fileId,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json(err.message);
-  }
-});
 // ================= SERVER =================
 const PORT = process.env.PORT || 8080;
 

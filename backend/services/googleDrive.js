@@ -67,14 +67,41 @@ async function uploadFile(filePath, fileName, jobNumber) {
 
   return response.data.id;
 }
-async function testFolder() {
-  return await drive.files.get({
-    fileId: ROOT_FOLDER_ID,
-    supportsAllDrives: true,
-  });
+
+const path = require("path");
+
+async function uploadJobImagesToDrive(jobNumber, images) {
+  const allImages = [
+    ...(images.beforeImages || []),
+    ...(images.afterImages || []),
+    ...(images.issueImages || []),
+  ];
+
+  const uploaded = [];
+
+  for (const imageUrl of allImages) {
+    const relativePath = imageUrl.replace(/^\/+/, "");
+
+    const fullPath = path.join(__dirname, "..", relativePath);
+
+    if (!fs.existsSync(fullPath)) {
+      console.log("File not found:", fullPath);
+      continue;
+    }
+
+    const fileId = await uploadFile(
+      fullPath,
+      path.basename(fullPath),
+      jobNumber,
+    );
+
+    uploaded.push(fileId);
+  }
+
+  return uploaded;
 }
 
 module.exports = {
   uploadFile,
-  testFolder,
+  uploadJobImagesToDrive,
 };

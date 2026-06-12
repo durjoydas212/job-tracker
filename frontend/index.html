@@ -256,18 +256,41 @@
             placeholder="Notes"
           ></textarea>
 
+          <h6 class="mt-3">Before Photos</h6>
           <input
             type="file"
-            id="completeImage"
+            id="beforeImages"
             class="form-control mb-2"
             multiple
           />
+
+          <h6>After Photos</h6>
           <input
-            type="text"
-            id="comTags"
-            placeholder="Enter tags (comma separated)"
-            class="w-100"
+            type="file"
+            id="afterImages"
+            class="form-control mb-2"
+            multiple
           />
+
+          <h6>Issue Photos</h6>
+          <input
+            type="file"
+            id="issueImages"
+            class="form-control mb-2"
+            multiple
+          />
+
+          <div class="form-check mt-2">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="uploadToDrive"
+              checked
+            />
+            <label class="form-check-label" for="uploadToDrive">
+              Upload photos to Google Drive
+            </label>
+          </div>
         </div>
 
         <button
@@ -461,27 +484,42 @@
 
           // COMPLETE
           if (status === "Complete") {
-            const files = document.getElementById("completeImage").files;
-            const images = files.length ? await uploadImages(files) : [];
+            const beforeFiles = document.getElementById("beforeImages").files;
+            const afterFiles = document.getElementById("afterImages").files;
+            const issueFiles = document.getElementById("issueImages").files;
 
-            const tags = document
-              .getElementById("comTags")
-              .value.split(",")
-              .filter((t) => t.trim() !== "")
-              .map((t) => t.trim());
+            const beforeImages = beforeFiles.length
+              ? await uploadImages(beforeFiles)
+              : [];
+
+            const afterImages = afterFiles.length
+              ? await uploadImages(afterFiles)
+              : [];
+
+            const issueImages = issueFiles.length
+              ? await uploadImages(issueFiles)
+              : [];
+
+            const uploadToDrive =
+              document.getElementById("uploadToDrive").checked;
 
             notes = document.getElementById("completeNotes").value;
 
             data = {
               userPhone: currentUser.phone,
               userId: currentUser.id,
+
               cos: document.getElementById("cos").value,
               payment: document.getElementById("payment").value,
               finance: document.getElementById("finance").value,
               referral: document.getElementById("referral").value,
               installers: document.getElementById("installersComplete").value,
-              images: images,
-              tags: tags,
+
+              beforeImages,
+              afterImages,
+              issueImages,
+
+              uploadToDrive,
             };
           }
 
@@ -502,7 +540,9 @@
 
           document.getElementById("imageFile").value = "";
           document.getElementById("incImage").value = "";
-          document.getElementById("completeImage").value = "";
+          document.getElementById("beforeImages").value = "";
+          document.getElementById("afterImages").value = "";
+          document.getElementById("issueImages").value = "";
 
           handleStatus();
 
@@ -680,7 +720,23 @@ ${
     <strong>Material:</strong> ${d.material || "-"} <br>
     <strong>Date:</strong> ${date} <br><br>
     
-    ${renderJobImages(d.images)}
+   ${
+     d.beforeImages?.length
+       ? `<h6>Before Photos</h6>${renderJobImages(d.beforeImages)}`
+       : ""
+   }
+
+${
+  d.afterImages?.length
+    ? `<h6>After Photos</h6>${renderJobImages(d.afterImages)}`
+    : ""
+}
+
+${
+  d.issueImages?.length
+    ? `<h6>Issue Photos</h6>${renderJobImages(d.issueImages)}`
+    : ""
+}
         <br>
 
 <div

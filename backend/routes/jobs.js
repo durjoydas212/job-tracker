@@ -91,7 +91,19 @@ router.post("/", async (req, res) => {
       } catch (smsErr) {
         console.log("SMS ERROR:", smsErr.message);
       }
+      if (data?.uploadToDrive) {
+        try {
+          await uploadJobImagesToDrive(job_number, {
+            beforeImages: data.beforeImages || [],
+            afterImages: data.afterImages || [],
+            issueImages: data.issueImages || [],
+          });
 
+          console.log("Drive upload completed");
+        } catch (driveErr) {
+          console.log("Drive upload error:", driveErr.message);
+        }
+      }
       res.send({ id: this.lastID });
     },
   );
@@ -334,10 +346,11 @@ router.post("/upload-drive/:id", async (req, res) => {
 
       const data = JSON.parse(row.data || "{}");
 
-      const result = await uploadJobImagesToDrive(
-        row.job_number,
-        data.images || [],
-      );
+      const result = await uploadJobImagesToDrive(row.job_number, {
+        beforeImages: data.beforeImages || [],
+        afterImages: data.afterImages || [],
+        issueImages: data.issueImages || [],
+      });
 
       res.json({
         success: true,
