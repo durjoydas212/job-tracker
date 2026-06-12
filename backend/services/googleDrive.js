@@ -31,11 +31,36 @@ async function findFolderByName(folderName) {
 }
 
 async function createFolder(folderName) {
+  
   const folder = await drive.files.create({
     requestBody: {
       name: folderName,
       mimeType: "application/vnd.google-apps.folder",
       parents: [ROOT_FOLDER_ID],
+    },
+    supportsAllDrives: true,
+  });
+
+  return folder.data.id;
+}
+
+async function getOrCreateSubFolder(parentId, folderName) {
+  const response = await drive.files.list({
+    q: `name='${folderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    fields: "files(id,name)",
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+  });
+
+  if (response.data.files.length) {
+    return response.data.files[0].id;
+  }
+
+  const folder = await drive.files.create({
+    requestBody: {
+      name: folderName,
+      mimeType: "application/vnd.google-apps.folder",
+      parents: [parentId],
     },
     supportsAllDrives: true,
   });
@@ -71,34 +96,53 @@ async function uploadFile(filePath, fileName, jobNumber) {
 const path = require("path");
 
 async function uploadJobImagesToDrive(jobNumber, images) {
-  const allImages = [
-    ...(images.beforeImages || []),
-    ...(images.afterImages || []),
-    ...(images.issueImages || []),
-  ];
+  let folder = await findFolderByName(jobNumber);
 
-  const uploaded = [];
+  let jobFolderId;
 
-  for (const imageUrl of allImages) {
+  if (folder) {
+    jobFolderId = folder.id;
+  } else {
+    jobFolderId = await createFolder(jobNumber);
+  }
+
+  const beforeFolderId = await getOrCreateSubFolder(jobFolderId, "Before");
+
+  const afterFolderId = await getOrCreateSubFolder(jobFolderId, "After");
+
+  const issueFolderId = await getOrCreateSubFolder(jobFolderId, "Issue");
+
+  await uploadCategory(images.beforeImages || [], beforeFolderId);
+
+  await uploadCategory(images.afterImages || [], afterFolderId);
+
+  await uploadCategory(images.issueImages || [], issueFolderId);
+
+  return true;
+}
+
+async function uploadCategory(imageArray, folderId) {
+  for (const imageUrl of imageArray) {
     const relativePath = imageUrl.replace(/^\/+/, "");
 
     const fullPath = path.join(process.cwd(), relativePath);
-    console.log("Trying:", fullPath);
+
     if (!fs.existsSync(fullPath)) {
       console.log("File not found:", fullPath);
       continue;
     }
 
-    const fileId = await uploadFile(
-      fullPath,
-      path.basename(fullPath),
-      jobNumber,
-    );
-
-    uploaded.push(fileId);
+    await drive.files.create({
+      requestBody: {
+        name: path.basename(fullPath),
+        parents: [folderId],
+      },
+      media: {
+        body: fs.createReadStream(fullPath),
+      },
+      supportsAllDrives: true,
+    });
   }
-
-  return uploaded;
 }
 
 module.exports = {
