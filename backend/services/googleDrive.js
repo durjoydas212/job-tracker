@@ -82,8 +82,8 @@ async function uploadJobImagesToDrive(jobNumber, images) {
   for (const imageUrl of allImages) {
     const relativePath = imageUrl.replace(/^\/+/, "");
 
-    const fullPath = path.join(__dirname, "..", relativePath);
-
+    const fullPath = path.join(process.cwd(), relativePath);
+    console.log("Trying:", fullPath);
     if (!fs.existsSync(fullPath)) {
       console.log("File not found:", fullPath);
       continue;
