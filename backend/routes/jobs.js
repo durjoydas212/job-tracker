@@ -99,8 +99,22 @@ router.post("/", async (req, res) => {
             issueImages: data.issueImages || [],
           });
 
+          data.driveUploaded = true;
+
+          db.run("UPDATE jobs SET data=? WHERE id=?", [
+            JSON.stringify(data),
+            this.lastID,
+          ]);
+
           console.log("Drive upload completed");
         } catch (driveErr) {
+          data.driveUploaded = false;
+
+          db.run("UPDATE jobs SET data=? WHERE id=?", [
+            JSON.stringify(data),
+            this.lastID,
+          ]);
+
           console.log("Drive upload error:", driveErr.message);
         }
       }
@@ -217,7 +231,7 @@ ${jobLink}`,
   });
 });
 router.post("/message/:id", async (req, res) => {
-  const { text, image, images, sender } = req.body;
+  const { text, image, images, sender, uploadToDrive } = req.body;
   const id = req.params.id;
 
   db.get("SELECT * FROM jobs WHERE id=?", [id], (err, row) => {
@@ -242,6 +256,9 @@ router.post("/message/:id", async (req, res) => {
       ...data,
       messages: [...oldMessages, newMessage],
     };
+    if (uploadToDrive && images?.length) {
+      updatedData.chatImages = [...(data.chatImages || []), ...images];
+    }
 
     db.run(
       "UPDATE jobs SET data=? WHERE id=?",
@@ -350,7 +367,14 @@ router.post("/upload-drive/:id", async (req, res) => {
         beforeImages: data.beforeImages || [],
         afterImages: data.afterImages || [],
         issueImages: data.issueImages || [],
+        chatImages: data.chatImages || [],
       });
+      data.driveUploaded = true;
+
+      db.run("UPDATE jobs SET data=? WHERE id=?", [
+        JSON.stringify(data),
+        jobId,
+      ]);
 
       res.json({
         success: true,

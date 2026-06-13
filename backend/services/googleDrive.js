@@ -31,7 +31,6 @@ async function findFolderByName(folderName) {
 }
 
 async function createFolder(folderName) {
-  
   const folder = await drive.files.create({
     requestBody: {
       name: folderName,
@@ -117,6 +116,9 @@ async function uploadJobImagesToDrive(jobNumber, images) {
   await uploadCategory(images.afterImages || [], afterFolderId);
 
   await uploadCategory(images.issueImages || [], issueFolderId);
+  const chatFolderId = await getOrCreateSubFolder(jobFolderId, "Chat Images");
+
+  await uploadCategory(images.chatImages || [], chatFolderId);
 
   return true;
 }

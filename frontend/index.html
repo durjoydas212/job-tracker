@@ -718,7 +718,27 @@ ${
     <strong>Notes:</strong> ${job.notes || "-"} <br>
     <strong>Time:</strong> ${d.time || "-"} <br>
     <strong>Material:</strong> ${d.material || "-"} <br>
-    <strong>Date:</strong> ${date} <br><br>
+    <strong>Date:</strong> ${date} <br>
+
+${
+  d.driveUploaded
+    ? `<div class="mt-2">
+         <span class="badge bg-success">
+           ✅ Uploaded to Google Drive
+         </span>
+       </div>`
+    : `
+      <div class="mt-2">
+        <button
+          class="btn btn-sm btn-primary"
+          onclick="uploadJobToDrive(${job.id})">
+          📁 Upload To Drive
+        </button>
+      </div>
+    `
+}
+
+<br>
     
    ${
      d.beforeImages?.length
@@ -737,6 +757,7 @@ ${
     ? `<h6>Issue Photos</h6>${renderJobImages(d.issueImages)}`
     : ""
 }
+    
         <br>
 
 <div
@@ -773,7 +794,19 @@ ${
 
           ${msg.text ? `<div style="margin-bottom:5px;">${msg.text}</div>` : ""}
 
-          ${renderImages(msg.images || (msg.image ? [msg.image] : []))}
+         ${renderImages(msg.images || (msg.image ? [msg.image] : []))}
+
+${
+  msg.images?.length || msg.image
+    ? `
+      <button
+        class="btn btn-sm btn-outline-primary mt-1"
+        onclick="uploadMessageImagesToDrive(${job.id})">
+        ☁️ Upload To Drive
+      </button>
+    `
+    : ""
+}
 
           <div style="font-size:11px; color:#666; margin-top:5px; text-align:right;">
             ${msg.time}
@@ -1098,6 +1131,7 @@ ${
                 text,
                 images: imagePaths,
                 sender: "user",
+                uploadToDrive: true,
               }),
             },
           );
@@ -1400,6 +1434,49 @@ ${
           console.error("AUTO REFRESH ERROR:", err);
         }
       }
+      window.uploadJobToDrive = async function (jobId) {
+        try {
+          const btn = event.target;
+          btn.disabled = true;
+          btn.innerText = "Uploading...";
+
+          const res = await fetch(`${API}/jobs/upload-drive/${jobId}`, {
+            method: "POST",
+          });
+
+          const data = await res.json();
+
+          if (data.success) {
+            await loadHistory();
+          } else {
+            btn.disabled = false;
+            btn.innerText = "Upload To Drive";
+            alert("Drive upload failed");
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Drive upload failed");
+        }
+      };
+      window.uploadMessageImagesToDrive = async function (jobId) {
+        try {
+          const res = await fetch(`${API}/jobs/upload-drive/${jobId}`, {
+            method: "POST",
+          });
+
+          const data = await res.json();
+
+          if (data.success) {
+            alert("Uploaded to Google Drive");
+            loadHistory();
+          } else {
+            alert("Upload failed");
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Upload failed");
+        }
+      };
 
       loadHistory();
 
