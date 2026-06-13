@@ -150,4 +150,8 @@ async function uploadCategory(imageArray, folderId) {
 module.exports = {
   uploadFile,
   uploadJobImagesToDrive,
+  uploadCategory,
+  getOrCreateSubFolder,
+  findFolderByName,
+  createFolder,
 };
