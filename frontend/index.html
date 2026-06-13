@@ -798,21 +798,35 @@ ${
 
           ${msg.text ? `<div style="margin-bottom:5px;">${msg.text}</div>` : ""}
 
-         ${renderImages(msg.images || (msg.image ? [msg.image] : []))}
+        ${
+          msg.images?.length || msg.image
+            ? `
+      <div style="position:relative; display:inline-block;">
 
-${
-  msg.images?.length || msg.image
-    ? `
-      <button
- class="btn btn-sm p-1 border-0 bg-transparent"
-onclick="uploadMessageImagesToDrive(${job.id}, this)"
+        ${renderImages(msg.images || (msg.image ? [msg.image] : []))}
 
- <i class="fa-solid fa-cloud-arrow-up text-primary"></i>
+        <button
+          onclick="uploadMessageImagesToDrive(${job.id}, this)"
+          style="
+            position:absolute;
+            top:8px;
+            right:8px;
+            border:none;
+            width:32px;
+            height:32px;
+            border-radius:50%;
+            background:rgba(255,255,255,.9);
+            box-shadow:0 2px 8px rgba(0,0,0,.2);
+            cursor:pointer;
+          "
+        >
+          <i class="fa-solid fa-cloud-arrow-up text-primary"></i>
+        </button>
 
-</button>
+      </div>
     `
-    : ""
-}
+            : ""
+        }
 
           <div style="font-size:11px; color:#666; margin-top:5px; text-align:right;">
             ${msg.time}
@@ -1476,17 +1490,6 @@ onclick="uploadMessageImagesToDrive(${job.id}, this)"
         } catch (err) {
           console.error(err);
           alert("Drive upload failed");
-        }
-      };
-      window.uploadMessageImagesToDrive = async function (jobId) {
-        const res = await fetch(`${API}/jobs/upload-message-drive/${jobId}`, {
-          method: "POST",
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-          loadHistory();
         }
       };
 
