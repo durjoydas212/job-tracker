@@ -1,9 +1,16 @@
 const fs = require("fs");
 const path = require("path");
-const { uploadJobImagesToDrive } = require("../services/googleDrive");
 const twilio = require("twilio");
 
 const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_TOKEN);
+
+const {
+  uploadJobImagesToDrive,
+  uploadCategory,
+  getOrCreateSubFolder,
+  findFolderByName,
+  createFolder,
+} = require("../services/googleDrive");
 
 async function sendSms(to, body) {
   if (!to) return;
@@ -250,6 +257,7 @@ router.post("/message/:id", async (req, res) => {
       text,
       images: images || (image ? [image] : []),
       time: new Date().toLocaleString(),
+      driveUploaded: false,
     };
 
     const updatedData = {
@@ -384,6 +392,49 @@ router.post("/upload-drive/:id", async (req, res) => {
   } catch (err) {
     console.error(err);
 
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
+
+router.post("/upload-message-drive/:id", async (req, res) => {
+  try {
+    const jobId = req.params.id;
+
+    db.get("SELECT * FROM jobs WHERE id=?", [jobId], async (err, row) => {
+      if (err) return res.status(500).send(err);
+      if (!row) return res.status(404).send("Job not found");
+
+      const data = JSON.parse(row.data || "{}");
+
+      const messages = data.messages || [];
+
+      const jobFolder = await findFolderByName(row.job_number);
+
+      const jobFolderId = jobFolder?.id || (await createFolder(row.job_number));
+
+      const chatFolderId = await getOrCreateSubFolder(jobFolderId, "Chat");
+
+      for (const msg of messages) {
+        if (!msg.images?.length) continue;
+
+        if (msg.driveUploaded) continue;
+
+        await uploadCategory(msg.images, chatFolderId);
+
+        msg.driveUploaded = true;
+      }
+
+      db.run("UPDATE jobs SET data=? WHERE id=?", [
+        JSON.stringify(data),
+        jobId,
+      ]);
+
+      res.json({ success: true });
+    });
+  } catch (err) {
     res.status(500).json({
       success: false,
       error: err.message,
