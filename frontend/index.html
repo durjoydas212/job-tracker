@@ -151,18 +151,41 @@
               <option>Other</option>
             </select>
 
+            <h6 class="mt-3">Before Photos</h6>
             <input
               type="file"
-              id="imageFile"
-              multiple
+              id="beforeImages"
               class="form-control mb-2"
+              multiple
             />
+
+            <h6>After Photos</h6>
             <input
-              type="text"
-              id="imageTags"
-              placeholder="Enter tags (comma separated)"
-              class="w-100"
+              type="file"
+              id="afterImages"
+              class="form-control mb-2"
+              multiple
             />
+
+            <h6>Issue Photos</h6>
+            <input
+              type="file"
+              id="issueImages"
+              class="form-control mb-2"
+              multiple
+            />
+
+            <div class="form-check mt-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="uploadToDrive"
+                checked
+              />
+              <label class="form-check-label" for="uploadToDrive">
+                Upload photos to Google Drive
+              </label>
+            </div>
           </div>
         </div>
 
@@ -213,13 +236,41 @@
             <option>Other</option>
           </select>
 
-          <input type="file" id="incImage" class="form-control mb-2" multiple />
+          <h6 class="mt-3">Before Photos</h6>
           <input
-            type="text"
-            id="incTags"
-            placeholder="Enter tags (comma separated)"
-            class="w-100"
+            type="file"
+            id="beforeImages"
+            class="form-control mb-2"
+            multiple
           />
+
+          <h6>After Photos</h6>
+          <input
+            type="file"
+            id="afterImages"
+            class="form-control mb-2"
+            multiple
+          />
+
+          <h6>Issue Photos</h6>
+          <input
+            type="file"
+            id="issueImages"
+            class="form-control mb-2"
+            multiple
+          />
+
+          <div class="form-check mt-2">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="uploadToDrive"
+              checked
+            />
+            <label class="form-check-label" for="uploadToDrive">
+              Upload photos to Google Drive
+            </label>
+          </div>
         </div>
 
         <!-- ================= COMPLETE ================= -->
