@@ -151,18 +151,40 @@
               <option>Other</option>
             </select>
 
+            <h6>Before Photos</h6>
             <input
               type="file"
-              id="imageFile"
+              id="beforeImages"
               multiple
               class="form-control mb-2"
             />
+
+            <h6>After Photos</h6>
             <input
-              type="text"
-              id="imageTags"
-              placeholder="Enter tags (comma separated)"
-              class="w-100"
+              type="file"
+              id="afterImages"
+              multiple
+              class="form-control mb-2"
             />
+
+            <h6>Issue Photos</h6>
+            <input
+              type="file"
+              id="issueImages"
+              multiple
+              class="form-control mb-2"
+            />
+
+            <div class="form-check mt-2 mb-3">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="uploadToDrive"
+              />
+              <label class="form-check-label">
+                Upload Photos to Google Drive
+              </label>
+            </div>
           </div>
         </div>
 
@@ -213,13 +235,40 @@
             <option>Other</option>
           </select>
 
-          <input type="file" id="incImage" class="form-control mb-2" multiple />
+          <h6>Before Photos</h6>
           <input
-            type="text"
-            id="incTags"
-            placeholder="Enter tags (comma separated)"
-            class="w-100"
+            type="file"
+            id="beforeImages"
+            multiple
+            class="form-control mb-2"
           />
+
+          <h6>After Photos</h6>
+          <input
+            type="file"
+            id="afterImages"
+            multiple
+            class="form-control mb-2"
+          />
+
+          <h6>Issue Photos</h6>
+          <input
+            type="file"
+            id="issueImages"
+            multiple
+            class="form-control mb-2"
+          />
+
+          <div class="form-check mt-2 mb-3">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="uploadToDrive"
+            />
+            <label class="form-check-label">
+              Upload Photos to Google Drive
+            </label>
+          </div>
         </div>
 
         <!-- ================= COMPLETE ================= -->
@@ -537,8 +586,13 @@
 
           alert("Saved successfully!");
 
-          await loadHistory();
           document.getElementById("jobNumber").value = "";
+
+          await loadHistory();
+
+          setTimeout(() => {
+            loadHistory();
+          }, 500);
 
           // reset other fields
           document.getElementById("status").value = "";
@@ -1497,7 +1551,6 @@ ${
       };
 
       loadHistory();
-      
 
       setInterval(async () => {
         if (isTyping) return;
