@@ -490,13 +490,29 @@
 
           // STARTED
           if (status === "Started") {
-            const files = document.getElementById("imageFile")?.files || [];
-            const images = files.length ? await uploadImages(files) : [];
+            const beforeFiles =
+              document.getElementById("beforeImages")?.files || [];
 
-            const tags = document
-              .getElementById("imageTags")
-              .value.split(",")
-              .map((t) => t.trim());
+            const afterFiles =
+              document.getElementById("afterImages")?.files || [];
+
+            const issueFiles =
+              document.getElementById("issueImages")?.files || [];
+
+            const beforeImages = beforeFiles.length
+              ? await uploadImages(beforeFiles)
+              : [];
+
+            const afterImages = afterFiles.length
+              ? await uploadImages(afterFiles)
+              : [];
+
+            const issueImages = issueFiles.length
+              ? await uploadImages(issueFiles)
+              : [];
+
+            const uploadToDrive =
+              document.getElementById("uploadToDrive")?.checked || false;
 
             notes = document.getElementById("notes").value;
 
@@ -506,34 +522,59 @@
               walkthrough: document.getElementById("walkthrough").value,
               tag1: document.getElementById("tag1").value,
               tag2: document.getElementById("tag2").value,
-              images: images,
-              tags: tags,
+
+              beforeImages,
+              afterImages,
+              issueImages,
+
+              uploadToDrive,
             };
           }
 
           // INCOMPLETE
           if (status === "Incomplete") {
-            const files = document.getElementById("incImage")?.files || [];
-            const images = files.length ? await uploadImages(files) : [];
+            const beforeFiles =
+              document.getElementById("beforeImages")?.files || [];
 
-            const tags = document
-              .getElementById("incTags")
-              .value.split(",")
-              .filter((t) => t.trim() !== "")
-              .map((t) => t.trim());
+            const afterFiles =
+              document.getElementById("afterImages")?.files || [];
+
+            const issueFiles =
+              document.getElementById("issueImages")?.files || [];
+
+            const beforeImages = beforeFiles.length
+              ? await uploadImages(beforeFiles)
+              : [];
+
+            const afterImages = afterFiles.length
+              ? await uploadImages(afterFiles)
+              : [];
+
+            const issueImages = issueFiles.length
+              ? await uploadImages(issueFiles)
+              : [];
+
+            const uploadToDrive =
+              document.getElementById("uploadToDrive")?.checked || false;
 
             notes = document.getElementById("incNotes").value;
 
             data = {
               userPhone: currentUser.phone,
               userId: currentUser.id,
+
               time: document.getElementById("timeNeeded").value,
               installers: document.getElementById("installers").value,
               material: document.getElementById("material").value,
+
               tag1: document.getElementById("incTag1").value,
               tag2: document.getElementById("incTag2").value,
-              images: images,
-              tags: tags,
+
+              beforeImages,
+              afterImages,
+              issueImages,
+
+              uploadToDrive,
             };
           }
 
@@ -608,11 +649,6 @@
           document.getElementById("incNotes").value = "";
           document.getElementById("completeNotes").value = "";
 
-          document.getElementById("imageFile") &&
-            (document.getElementById("imageFile").value = "");
-
-          document.getElementById("incImage") &&
-            (document.getElementById("incImage").value = "");
 
           document.getElementById("beforeImages") &&
             (document.getElementById("beforeImages").value = "");
