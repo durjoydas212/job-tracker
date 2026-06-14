@@ -151,40 +151,18 @@
               <option>Other</option>
             </select>
 
-            <h6>Before Photos</h6>
             <input
               type="file"
-              id="beforeImages"
+              id="imageFile"
               multiple
               class="form-control mb-2"
             />
-
-            <h6>After Photos</h6>
             <input
-              type="file"
-              id="afterImages"
-              multiple
-              class="form-control mb-2"
+              type="text"
+              id="imageTags"
+              placeholder="Enter tags (comma separated)"
+              class="w-100"
             />
-
-            <h6>Issue Photos</h6>
-            <input
-              type="file"
-              id="issueImages"
-              multiple
-              class="form-control mb-2"
-            />
-
-            <div class="form-check mt-2 mb-3">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                id="uploadToDrive"
-              />
-              <label class="form-check-label">
-                Upload Photos to Google Drive
-              </label>
-            </div>
           </div>
         </div>
 
@@ -235,40 +213,13 @@
             <option>Other</option>
           </select>
 
-          <h6>Before Photos</h6>
+          <input type="file" id="incImage" class="form-control mb-2" multiple />
           <input
-            type="file"
-            id="beforeImages"
-            multiple
-            class="form-control mb-2"
+            type="text"
+            id="incTags"
+            placeholder="Enter tags (comma separated)"
+            class="w-100"
           />
-
-          <h6>After Photos</h6>
-          <input
-            type="file"
-            id="afterImages"
-            multiple
-            class="form-control mb-2"
-          />
-
-          <h6>Issue Photos</h6>
-          <input
-            type="file"
-            id="issueImages"
-            multiple
-            class="form-control mb-2"
-          />
-
-          <div class="form-check mt-2 mb-3">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              id="uploadToDrive"
-            />
-            <label class="form-check-label">
-              Upload Photos to Google Drive
-            </label>
-          </div>
         </div>
 
         <!-- ================= COMPLETE ================= -->
@@ -488,7 +439,7 @@
 
           // STARTED
           if (status === "Started") {
-            const files = document.getElementById("imageFile").files;
+            const files = document.getElementById("imageFile")?.files || [];
             const images = files.length ? await uploadImages(files) : [];
 
             const tags = document
@@ -511,7 +462,7 @@
 
           // INCOMPLETE
           if (status === "Incomplete") {
-            const files = document.getElementById("incImage").files;
+            const files = document.getElementById("incImage")?.files || [];
             const images = files.length ? await uploadImages(files) : [];
 
             const tags = document
@@ -537,9 +488,14 @@
 
           // COMPLETE
           if (status === "Complete") {
-            const beforeFiles = document.getElementById("beforeImages").files;
-            const afterFiles = document.getElementById("afterImages").files;
-            const issueFiles = document.getElementById("issueImages").files;
+            const beforeFiles =
+              document.getElementById("beforeImages")?.files || [];
+
+            const afterFiles =
+              document.getElementById("afterImages")?.files || [];
+
+            const issueFiles =
+              document.getElementById("issueImages")?.files || [];
 
             const beforeImages = beforeFiles.length
               ? await uploadImages(beforeFiles)
@@ -601,11 +557,20 @@
           document.getElementById("incNotes").value = "";
           document.getElementById("completeNotes").value = "";
 
-          document.getElementById("imageFile").value = "";
-          document.getElementById("incImage").value = "";
-          document.getElementById("beforeImages").value = "";
-          document.getElementById("afterImages").value = "";
-          document.getElementById("issueImages").value = "";
+          document.getElementById("imageFile") &&
+            (document.getElementById("imageFile").value = "");
+
+          document.getElementById("incImage") &&
+            (document.getElementById("incImage").value = "");
+
+          document.getElementById("beforeImages") &&
+            (document.getElementById("beforeImages").value = "");
+
+          document.getElementById("afterImages") &&
+            (document.getElementById("afterImages").value = "");
+
+          document.getElementById("issueImages") &&
+            (document.getElementById("issueImages").value = "");
 
           handleStatus();
         } catch (err) {
