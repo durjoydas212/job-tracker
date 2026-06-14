@@ -116,7 +116,7 @@ async function uploadJobImagesToDrive(jobNumber, images) {
   await uploadCategory(images.afterImages || [], afterFolderId);
 
   await uploadCategory(images.issueImages || [], issueFolderId);
-  const chatFolderId = await getOrCreateSubFolder(jobFolderId, "Chat Images");
+  const chatFolderId = await getOrCreateSubFolder(jobFolderId, "Chat");
 
   await uploadCategory(images.chatImages || [], chatFolderId);
 

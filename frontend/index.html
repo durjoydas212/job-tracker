@@ -527,13 +527,18 @@
             };
           }
 
-          await fetch(`${API}/jobs`, {
+          const response = await fetch(`${API}/jobs`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ job_number, status, notes, data }),
           });
 
+          const result = await response.json();
+
           alert("Saved successfully!");
+
+          await loadHistory();
+          document.getElementById("jobNumber").value = "";
 
           // reset other fields
           document.getElementById("status").value = "";
@@ -549,8 +554,6 @@
           document.getElementById("issueImages").value = "";
 
           handleStatus();
-
-          loadHistory();
         } catch (err) {
           console.error(err);
           alert("Error saving job");
@@ -1494,6 +1497,7 @@ ${
       };
 
       loadHistory();
+      
 
       setInterval(async () => {
         if (isTyping) return;
@@ -1514,24 +1518,6 @@ ${
 
         window.scrollTo(0, oldScrollY);
       }, 3000);
-      setTimeout(async () => {
-        try {
-          await uploadJobImagesToDrive(job_number, {
-            beforeImages: data.beforeImages || [],
-            afterImages: data.afterImages || [],
-            issueImages: data.issueImages || [],
-          });
-
-          data.driveUploaded = true;
-
-          db.run("UPDATE jobs SET data=? WHERE id=?", [
-            JSON.stringify(data),
-            this.lastID,
-          ]);
-        } catch (err) {
-          console.log("Drive upload error:", err.message);
-        }
-      }, 100);
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   </body>
