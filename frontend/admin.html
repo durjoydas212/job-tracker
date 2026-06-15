@@ -1113,6 +1113,26 @@ ${
     : ""
 }
 
+<div class="mt-2">
+${
+  d.driveUploaded
+    ? `
+      <span class="badge bg-success">
+        ✅ Uploaded To Google Drive
+      </span>
+    `
+    : `
+      <button
+        class="btn btn-sm btn-primary"
+        onclick="uploadJobToDrive(${job.id})">
+        📁 Upload To Drive
+      </button>
+    `
+}
+</div>
+
+<div id="chat-${job.id}"
+
 <div
   id="chat-${job.id}"
   style="
@@ -1260,6 +1280,25 @@ ${
         document.getElementById("approvedJobs").innerText = approved;
         document.getElementById("pendingJobs").innerText = pending;
       }
+
+      window.uploadJobToDrive = async function (jobId) {
+        try {
+          const res = await fetch(`${API}/jobs/upload-drive/${jobId}`, {
+            method: "POST",
+          });
+
+          const data = await res.json();
+
+          if (data.success) {
+            loadJobs();
+          } else {
+            alert("Upload failed");
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Upload failed");
+        }
+      };
 
       window.openSubmittedSlider = function (images, startIndex = 0) {
         const imgs = (Array.isArray(images) ? images : [])
