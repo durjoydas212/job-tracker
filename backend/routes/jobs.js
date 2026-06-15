@@ -126,6 +126,8 @@ router.post("/", async (req, res) => {
           console.log("Drive upload error:", driveErr.message);
         }
       }
+
+      res.send({ id: this.lastID });
     },
   );
 });
