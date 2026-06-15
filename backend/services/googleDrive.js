@@ -134,6 +134,19 @@ async function uploadCategory(imageArray, folderId) {
       continue;
     }
 
+    // Check if file already exists
+    const existing = await drive.files.list({
+      q: `'${folderId}' in parents and name='${path.basename(fullPath)}' and trashed=false`,
+      fields: "files(id,name)",
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+    });
+
+    if (existing.data.files.length) {
+      console.log("Already uploaded:", path.basename(fullPath));
+      continue;
+    }
+
     await drive.files.create({
       requestBody: {
         name: path.basename(fullPath),
