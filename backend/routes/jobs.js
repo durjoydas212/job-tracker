@@ -101,26 +101,30 @@ router.post("/", async (req, res) => {
       res.send({ id: this.lastID });
 
       if (data?.uploadToDrive) {
-        setTimeout(async () => {
-          try {
-            await uploadJobImagesToDrive(job_number, {
-              beforeImages: data.beforeImages || [],
-              afterImages: data.afterImages || [],
-              issueImages: data.issueImages || [],
-            });
+        try {
+          await uploadJobImagesToDrive(job_number, {
+            beforeImages: data.beforeImages || [],
+            afterImages: data.afterImages || [],
+            issueImages: data.issueImages || [],
+          });
 
-            data.driveUploaded = true;
+          data.driveUploaded = true;
 
-            db.run("UPDATE jobs SET data=? WHERE id=?", [
-              JSON.stringify(data),
-              this.lastID,
-            ]);
+          await new Promise((resolve, reject) => {
+            db.run(
+              "UPDATE jobs SET data=? WHERE id=?",
+              [JSON.stringify(data), this.lastID],
+              (err) => {
+                if (err) reject(err);
+                else resolve();
+              },
+            );
+          });
 
-            console.log("Drive upload completed");
-          } catch (driveErr) {
-            console.log("Drive upload error:", driveErr.message);
-          }
-        }, 100);
+          console.log("Drive upload completed");
+        } catch (driveErr) {
+          console.log("Drive upload error:", driveErr.message);
+        }
       }
     },
   );
