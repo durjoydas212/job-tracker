@@ -236,13 +236,41 @@
             <option>Other</option>
           </select>
 
-          <input type="file" id="incImage" class="form-control mb-2" multiple />
+          <h6 class="mt-3">Before Photos</h6>
           <input
-            type="text"
-            id="incTags"
-            placeholder="Enter tags (comma separated)"
-            class="w-100"
+            type="file"
+            id="incBeforeImages"
+            class="form-control mb-2"
+            multiple
           />
+
+          <h6>After Photos</h6>
+          <input
+            type="file"
+            id="incAfterImages"
+            class="form-control mb-2"
+            multiple
+          />
+
+          <h6>Issue Photos</h6>
+          <input
+            type="file"
+            id="incIssueImages"
+            class="form-control mb-2"
+            multiple
+          />
+
+          <div class="form-check mt-2">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="incUploadToDrive"
+              checked
+            />
+            <label class="form-check-label" for="incUploadToDrive">
+              Upload photos to Google Drive
+            </label>
+          </div>
         </div>
 
         <!-- ================= COMPLETE ================= -->
@@ -507,30 +535,33 @@
           }
 
           // INCOMPLETE
-          if (status === "Incomplete") {
-            const files = document.getElementById("incImage").files;
-            const images = files.length ? await uploadImages(files) : [];
+          const beforeFiles = document.getElementById("incBeforeImages").files;
 
-            const tags = document
-              .getElementById("incTags")
-              .value.split(",")
-              .filter((t) => t.trim() !== "")
-              .map((t) => t.trim());
+          const afterFiles = document.getElementById("incAfterImages").files;
 
-            notes = document.getElementById("incNotes").value;
+          const issueFiles = document.getElementById("incIssueImages").files;
 
-            data = {
-              userPhone: currentUser.phone,
-              userId: currentUser.id,
-              time: document.getElementById("timeNeeded").value,
-              installers: document.getElementById("installers").value,
-              material: document.getElementById("material").value,
-              tag1: document.getElementById("incTag1").value,
-              tag2: document.getElementById("incTag2").value,
-              images: images,
-              tags: tags,
-            };
-          }
+          const beforeImages = beforeFiles.length
+            ? await uploadImages(beforeFiles)
+            : [];
+
+          const afterImages = afterFiles.length
+            ? await uploadImages(afterFiles)
+            : [];
+
+          const issueImages = issueFiles.length
+            ? await uploadImages(issueFiles)
+            : [];
+
+          const uploadToDrive =
+            document.getElementById("incUploadToDrive").checked;
+
+          data = {
+            beforeImages,
+            afterImages,
+            issueImages,
+            uploadToDrive,
+          };
 
           // COMPLETE
           if (status === "Complete") {
