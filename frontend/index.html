@@ -535,33 +535,46 @@
           }
 
           // INCOMPLETE
-          const beforeFiles = document.getElementById("incBeforeImages").files;
+          if (status === "Incomplete") {
+            const beforeFiles =
+              document.getElementById("incBeforeImages").files;
 
-          const afterFiles = document.getElementById("incAfterImages").files;
+            const afterFiles = document.getElementById("incAfterImages").files;
 
-          const issueFiles = document.getElementById("incIssueImages").files;
+            const issueFiles = document.getElementById("incIssueImages").files;
 
-          const beforeImages = beforeFiles.length
-            ? await uploadImages(beforeFiles)
-            : [];
+            const beforeImages = beforeFiles.length
+              ? await uploadImages(beforeFiles)
+              : [];
 
-          const afterImages = afterFiles.length
-            ? await uploadImages(afterFiles)
-            : [];
+            const afterImages = afterFiles.length
+              ? await uploadImages(afterFiles)
+              : [];
 
-          const issueImages = issueFiles.length
-            ? await uploadImages(issueFiles)
-            : [];
+            const issueImages = issueFiles.length
+              ? await uploadImages(issueFiles)
+              : [];
 
-          const uploadToDrive =
-            document.getElementById("incUploadToDrive").checked;
+            const uploadToDrive =
+              document.getElementById("incUploadToDrive").checked;
 
-          data = {
-            beforeImages,
-            afterImages,
-            issueImages,
-            uploadToDrive,
-          };
+            notes = document.getElementById("incNotes").value;
+
+            data = {
+              userPhone: currentUser.phone,
+              userId: currentUser.id,
+
+              time: document.getElementById("timeNeeded").value,
+              installers: document.getElementById("installers").value,
+              material: document.getElementById("material").value,
+
+              beforeImages,
+              afterImages,
+              issueImages,
+
+              uploadToDrive,
+            };
+          }
 
           // COMPLETE
           if (status === "Complete") {
