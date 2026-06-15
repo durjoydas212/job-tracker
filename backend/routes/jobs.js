@@ -273,7 +273,7 @@ router.post("/message/:id", async (req, res) => {
         try {
           const userPhone = data.userPhone;
 
-          if (userPhone && sender === "admin") {
+          if (false && userPhone && sender === "admin") {
             const jobLink = getJobLink();
             await sendSms(
               userPhone,

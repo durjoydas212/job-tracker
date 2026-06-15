@@ -1282,6 +1282,11 @@ ${
       }
 
       window.uploadJobToDrive = async function (jobId) {
+        const btn = event.target;
+
+        btn.disabled = true;
+        btn.innerHTML = "⏳ Uploading...";
+
         try {
           const res = await fetch(`${API}/jobs/upload-drive/${jobId}`, {
             method: "POST",
@@ -1290,12 +1295,23 @@ ${
           const data = await res.json();
 
           if (data.success) {
-            loadJobs();
+            btn.outerHTML = `
+        <span class="badge bg-success">
+          ✅ Uploaded To Google Drive
+        </span>
+      `;
           } else {
+            btn.disabled = false;
+            btn.innerHTML = "📁 Upload To Drive";
+
             alert("Upload failed");
           }
         } catch (err) {
           console.error(err);
+
+          btn.disabled = false;
+          btn.innerHTML = "📁 Upload To Drive";
+
           alert("Upload failed");
         }
       };
