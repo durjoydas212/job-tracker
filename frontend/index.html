@@ -629,7 +629,9 @@
 
           document.getElementById("jobNumber").value = "";
 
-          await loadHistory();
+          setTimeout(() => {
+            loadHistory();
+          }, 8000);
 
           // reset other fields
           document.getElementById("status").value = "";
