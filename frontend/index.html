@@ -151,18 +151,41 @@
               <option>Other</option>
             </select>
 
+            <h6 class="mt-3">Before Photos</h6>
             <input
               type="file"
-              id="imageFile"
-              multiple
+              id="startedBeforeImages"
               class="form-control mb-2"
+              multiple
             />
+
+            <h6>After Photos</h6>
             <input
-              type="text"
-              id="imageTags"
-              placeholder="Enter tags (comma separated)"
-              class="w-100"
+              type="file"
+              id="startedAfterImages"
+              class="form-control mb-2"
+              multiple
             />
+
+            <h6>Issue Photos</h6>
+            <input
+              type="file"
+              id="startedIssueImages"
+              class="form-control mb-2"
+              multiple
+            />
+
+            <div class="form-check mt-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="startedUploadToDrive"
+                checked
+              />
+              <label class="form-check-label" for="startedUploadToDrive">
+                Upload photos to Google Drive
+              </label>
+            </div>
           </div>
         </div>
 
@@ -439,24 +462,47 @@
 
           // STARTED
           if (status === "Started") {
-            const files = document.getElementById("imageFile").files;
-            const images = files.length ? await uploadImages(files) : [];
+            const beforeFiles = document.getElementById(
+              "startedBeforeImages",
+            ).files;
 
-            const tags = document
-              .getElementById("imageTags")
-              .value.split(",")
-              .map((t) => t.trim());
+            const afterFiles =
+              document.getElementById("startedAfterImages").files;
+
+            const issueFiles =
+              document.getElementById("startedIssueImages").files;
+
+            const beforeImages = beforeFiles.length
+              ? await uploadImages(beforeFiles)
+              : [];
+
+            const afterImages = afterFiles.length
+              ? await uploadImages(afterFiles)
+              : [];
+
+            const issueImages = issueFiles.length
+              ? await uploadImages(issueFiles)
+              : [];
+
+            const uploadToDrive = document.getElementById(
+              "startedUploadToDrive",
+            ).checked;
 
             notes = document.getElementById("notes").value;
 
             data = {
               userPhone: currentUser.phone,
               userId: currentUser.id,
+
               walkthrough: document.getElementById("walkthrough").value,
               tag1: document.getElementById("tag1").value,
               tag2: document.getElementById("tag2").value,
-              images: images,
-              tags: tags,
+
+              beforeImages,
+              afterImages,
+              issueImages,
+
+              uploadToDrive,
             };
           }
 

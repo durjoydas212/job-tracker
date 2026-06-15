@@ -1064,21 +1064,9 @@
   ${Object.entries(d)
     .filter(
       ([key]) =>
-        ![
-          "images",
-          "tags",
-          "messages",
-          "instructions",
-          "instruction",
-          "beforeImages",
-          "afterImages",
-          "issueImages",
-          "chatImages",
-          "uploadToDrive",
-          "driveUploaded",
-          "userPhone",
-          "userId",
-        ].includes(key),
+        !["images", "tags", "messages", "instructions", "instruction"].includes(
+          key,
+        ),
     )
     .map(
       ([key, val]) =>
