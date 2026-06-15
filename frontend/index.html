@@ -585,11 +585,9 @@
 
           document.getElementById("jobNumber").value = "";
 
-          await loadHistory();
-
           setTimeout(() => {
             loadHistory();
-          }, 500);
+          }, 5000);
 
           // reset other fields
           document.getElementById("status").value = "";
@@ -598,8 +596,11 @@
           document.getElementById("incNotes").value = "";
           document.getElementById("completeNotes").value = "";
 
-          document.getElementById("imageFile").value = "";
-          document.getElementById("incImage").value = "";
+          const imageFile = document.getElementById("imageFile");
+          if (imageFile) imageFile.value = "";
+
+          const imageTags = document.getElementById("imageTags");
+          if (imageTags) imageTags.value = "";
           document.getElementById("beforeImages").value = "";
           document.getElementById("afterImages").value = "";
           document.getElementById("issueImages").value = "";
