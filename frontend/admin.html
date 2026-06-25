@@ -362,6 +362,23 @@
           )
           .join("");
       }
+      function renderCreateAssignedUsers() {
+        document.getElementById("assignedUsersList").innerHTML = assignedUsers
+          .map(
+            (u) => `
+        <span class="badge bg-primary rounded-pill px-3 py-2 me-2">
+          ${u.name}
+          <span
+            style="cursor:pointer;margin-left:8px;"
+            onclick="removeAssignedUser('${u.id}')"
+          >
+            ×
+          </span>
+        </span>
+      `,
+          )
+          .join("");
+      }
       let assignedUsers = [];
 
       function addAssignedUser() {
@@ -377,7 +394,7 @@
           name: text,
         });
 
-        renderAssignedUsers();
+        renderCreateAssignedUsers();
       }
       function renderAssignedUsers() {
         document.getElementById("assignedUsersList").innerHTML = assignedUsers
@@ -415,7 +432,7 @@
       function removeAssignedUser(id) {
         assignedUsers = assignedUsers.filter((u) => u.id != id);
 
-        renderAssignedUsers();
+        renderCreateAssignedUsers();
         document.getElementById("userDropdownArea").style.display = "none";
       }
 
@@ -758,8 +775,6 @@
           console.error("loadJobs failed:", err);
         }
       }
-
-      
 
       function updateNotifBadge() {
         const badge = document.getElementById("notifBadge");

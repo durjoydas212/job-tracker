@@ -98,7 +98,6 @@ router.post("/", async (req, res) => {
       } catch (smsErr) {
         console.log("SMS ERROR:", smsErr.message);
       }
-      res.send({ id: this.lastID });
 
       if (data?.uploadToDrive) {
         try {
