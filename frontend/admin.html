@@ -43,6 +43,9 @@
       </div>
 
       <div class="ms-auto d-flex align-items-center gap-3">
+        <button type="button" class="btn btn-primary" onclick="toggleAddJob()">
+          + Add Job
+        </button>
         <button
           type="button"
           class="btn btn-outline-dark"
@@ -145,6 +148,99 @@
         onkeyup="filterJobs()"
       />
 
+      <!-- FROM SECTION  -->
+      <div
+        id="addJobForm"
+        style="display: none"
+        class="card p-3 shadow-sm mt-3 mb-3"
+      >
+        <h5>Create Job</h5>
+
+        <input
+          id="newJobNumber"
+          class="form-control mb-2"
+          placeholder="Job Number"
+        />
+        <label class="form-label fw-bold">Assigned Users</label>
+
+        <div
+          id="assignedUsersContainer"
+          class="form-control d-flex flex-wrap align-items-center gap-2"
+          style="min-height: 52px"
+        >
+          <div id="assignedUsersList" class="d-flex flex-wrap gap-2"></div>
+
+          <button
+            type="button"
+            id="showUserSelectBtn"
+            class="btn btn-sm btn-outline-primary"
+            onclick="toggleUserDropdown()"
+          >
+            + Add User
+          </button>
+        </div>
+
+        <div id="userDropdownArea" class="mt-2" style="display: none">
+          <div class="row g-2">
+            <div class="col-md-6">
+              <select id="userSelect" class="form-select"></select>
+            </div>
+
+            <div class="col-auto">
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="addAssignedUser()"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <input
+          id="customerName"
+          class="form-control mb-2"
+          placeholder="Customer Name"
+        />
+
+        <input
+          id="customerPhone"
+          class="form-control mb-2"
+          placeholder="Phone Number"
+        />
+
+        <input
+          id="customerEmail"
+          class="form-control mb-2"
+          placeholder="Email"
+        />
+
+        <input
+          id="customerAddress"
+          class="form-control mb-2"
+          placeholder="Address"
+        />
+
+        <select id="jobStatus" class="form-control mb-2">
+          <option value="Started">Started</option>
+          <option value="Incomplete">Incomplete</option>
+          <option value="Complete">Complete</option>
+          <option value="Change Order">Change Order</option>
+          <option value="Call Back">Call Back</option>
+        </select>
+
+        <textarea
+          id="jobNotes"
+          class="form-control mb-2"
+          placeholder="Notes"
+        ></textarea>
+
+        <button class="btn btn-success" onclick="createJob()">
+          Create Job
+        </button>
+      </div>
+
       <table class="table table-bordered mt-3">
         <thead>
           <tr>
@@ -185,6 +281,7 @@
       let jobsSnapshot = "";
       let knownJobs = new Set();
       let knownStatuses = {};
+      let usersCount = 0;
       document.addEventListener("submit", function (e) {
         e.preventDefault();
       });
@@ -241,6 +338,85 @@
         localStorage.removeItem(`seenNotificationIds_${currentUser.id}`);
         localStorage.removeItem("user");
         window.location.href = "login.html";
+      }
+
+      // add user
+      async function loadUsers() {
+        const res = await fetch(`${API}/auth/users`, {
+          headers: {
+            "x-admin-id": currentUser.id,
+          },
+        });
+
+        const users = await res.json();
+        usersCount = users.filter((u) => u.role !== "admin").length;
+
+        document.getElementById("userSelect").innerHTML = users
+          .filter((u) => u.role !== "admin")
+          .map(
+            (u) => `
+        <option value="${u.id}">
+          ${u.name || u.phone}
+        </option>
+      `,
+          )
+          .join("");
+      }
+      let assignedUsers = [];
+
+      function addAssignedUser() {
+        const select = document.getElementById("userSelect");
+
+        const id = select.value;
+        const text = select.options[select.selectedIndex].text;
+
+        if (assignedUsers.find((u) => u.id == id)) return;
+
+        assignedUsers.push({
+          id,
+          name: text,
+        });
+
+        renderAssignedUsers();
+      }
+      function renderAssignedUsers() {
+        document.getElementById("assignedUsersList").innerHTML = assignedUsers
+          .map(
+            (user) => `
+          <span
+            class="badge bg-primary rounded-pill px-3 py-2 d-flex align-items-center"
+            style="font-size:14px;"
+          >
+            ${user.name}
+
+            <button
+              type="button"
+              onclick="removeAssignedUser('${user.id}')"
+              class="btn btn-sm text-white ms-2 p-0"
+              style="
+                border:none;
+                background:none;
+                font-size:18px;
+                line-height:1;
+              "
+            >
+              ×
+            </button>
+          </span>
+        `,
+          )
+          .join("");
+      }
+      function toggleUserDropdown() {
+        const area = document.getElementById("userDropdownArea");
+
+        area.style.display = area.style.display === "none" ? "block" : "none";
+      }
+      function removeAssignedUser(id) {
+        assignedUsers = assignedUsers.filter((u) => u.id != id);
+
+        renderAssignedUsers();
+        document.getElementById("userDropdownArea").style.display = "none";
       }
 
       // notifications
@@ -311,6 +487,83 @@
       )
       .join("")}
   `;
+      }
+
+      // add fob function
+      async function createJob() {
+        try {
+          const job_number = document
+            .getElementById("newJobNumber")
+            .value.trim();
+          const customerName = document
+            .getElementById("customerName")
+            .value.trim();
+          const customerPhone = document
+            .getElementById("customerPhone")
+            .value.trim();
+          const customerEmail = document
+            .getElementById("customerEmail")
+            .value.trim();
+          const customerAddress = document
+            .getElementById("customerAddress")
+            .value.trim();
+
+          const status = document.getElementById("jobStatus").value;
+          const notes = document.getElementById("jobNotes").value;
+
+          if (!job_number) {
+            alert("Job Number required");
+            return;
+          }
+
+          const data = {
+            customerName,
+            customerPhone,
+            customerEmail,
+            customerAddress,
+
+            assignedUsers: assignedUsers.map((u) => ({
+              id: Number(u.id),
+              name: u.name,
+            })),
+          };
+
+          const response = await fetch(`${API}/jobs`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              job_number,
+              status,
+              notes,
+              data,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            alert(result.error || "Failed to create job");
+            return;
+          }
+
+          alert("Job Created Successfully");
+
+          document.getElementById("newJobNumber").value = "";
+          document.getElementById("customerName").value = "";
+          document.getElementById("customerPhone").value = "";
+          document.getElementById("customerEmail").value = "";
+          document.getElementById("customerAddress").value = "";
+          document.getElementById("jobNotes").value = "";
+
+          toggleAddJob();
+
+          loadJobs();
+        } catch (err) {
+          console.error(err);
+          alert("Error creating job");
+        }
       }
 
       function buildNotificationsFromJobs(jobs) {
@@ -506,12 +759,7 @@
         }
       }
 
-      function saveSeen() {
-        localStorage.setItem(
-          "seenNotificationIds",
-          JSON.stringify(seenNotificationIds),
-        );
-      }
+      
 
       function updateNotifBadge() {
         const badge = document.getElementById("notifBadge");
@@ -1061,7 +1309,7 @@
       
       <td colspan="2">
   <strong>DATE:</strong> ${date}<br>
-  <strong>NOTES:</strong> ${job.notes || "-"}<br>
+ 
 
   ${Object.entries(d)
     .filter(
@@ -1078,6 +1326,10 @@
           "chatImages",
           "uploadToDrive",
           "driveUploaded",
+          "createdByAdmin",
+          "closed",
+          "locked",
+          "assignedUsers",
         ].includes(key),
     )
     .map(
@@ -1085,6 +1337,12 @@
         `<strong>${key.replace(/_/g, " ").toUpperCase()}:</strong> ${val || "-"}<br>`,
     )
     .join("")}
+ <strong>NOTES:</strong> ${job.notes || "-"}<br>
+<strong>ASSIGNED USERS:</strong>
+
+<div id="assigned-users-${job.id}" class="mt-2">
+  ${renderAssignedUsers(job)}
+</div>
 
  ${
    beforeImages.length
@@ -1279,6 +1537,160 @@ ${
         document.getElementById("totalJobs").innerText = total;
         document.getElementById("approvedJobs").innerText = approved;
         document.getElementById("pendingJobs").innerText = pending;
+      }
+
+      function renderAssignedUsers(job) {
+        const users = job.data?.assignedUsers || [];
+
+        return `
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+
+      ${users
+        .map(
+          (u) => `
+        <span
+          class="badge bg-primary px-3 py-2 rounded-pill"
+          style="font-size:14px;"
+        >
+          ${u.name}
+
+          <span
+            onclick="removeAssignedUserFromJob(${job.id},${u.id})"
+            style="
+              margin-left:8px;
+              cursor:pointer;
+              font-size:18px;
+            "
+          >
+            ×
+          </span>
+
+        </span>
+      `,
+        )
+        .join("")}
+
+      ${
+        (job.data?.assignedUsers?.length || 0) < usersCount
+          ? `
+        <button
+        class="btn btn-sm btn-outline-primary"
+        onclick="showAddUser(${job.id})">
+        + Add User
+        </button>
+    `
+          : ""
+      }
+
+    </div>
+
+    <div
+      id="add-user-${job.id}"
+      style="display:none;"
+      class="mt-2"
+    >
+      <select
+        id="select-user-${job.id}"
+        class="form-select form-select-sm mb-2"
+      >
+      </select>
+
+      <button
+        class="btn btn-primary btn-sm"
+        onclick="addUserToJob(${job.id})"
+      >
+        Add
+      </button>
+
+    </div>
+  `;
+      }
+      function showAddUser(jobId) {
+        const box = document.getElementById(`add-user-${jobId}`);
+
+        box.style.display = box.style.display === "none" ? "block" : "none";
+
+        loadUsersIntoSelect(jobId);
+      }
+      async function loadUsersIntoSelect(jobId) {
+        const res = await fetch(`${API}/auth/users`, {
+          headers: {
+            "x-admin-id": currentUser.id,
+          },
+        });
+
+        const users = await res.json();
+
+        const job = allJobs.find((j) => j.id == jobId);
+
+        const assignedIds = (job.data?.assignedUsers || []).map((u) =>
+          Number(u.id),
+        );
+
+        const availableUsers = users.filter(
+          (u) => u.role !== "admin" && !assignedIds.includes(Number(u.id)),
+        );
+
+        const select = document.getElementById(`select-user-${jobId}`);
+
+        if (availableUsers.length === 0) {
+          select.innerHTML = `<option>No users available</option>`;
+
+          return;
+        }
+
+        select.innerHTML = availableUsers
+          .map(
+            (u) => `
+        <option value="${u.id}">
+            ${u.name}
+        </option>
+    `,
+          )
+          .join("");
+      }
+      async function addUserToJob(jobId) {
+        const id = document.getElementById(`select-user-${jobId}`).value;
+
+        await fetch(`${API}/jobs/${jobId}/assigned-users`, {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            userId: id,
+          }),
+        });
+
+        loadJobs();
+      }
+      async function removeAssignedUserFromJob(jobId, userId) {
+        try {
+          const res = await fetch(
+            `${API}/jobs/${jobId}/assigned-users/${userId}`,
+            {
+              method: "DELETE",
+            },
+          );
+
+          if (!res.ok) {
+            alert("Backend route not found");
+            return;
+          }
+
+          const result = await res.json();
+
+          if (!res.ok) {
+            alert(result.error || "Failed to remove user");
+            return;
+          }
+
+          loadJobs();
+        } catch (err) {
+          console.error(err);
+        }
       }
 
       window.uploadJobToDrive = async function (jobId) {
@@ -1839,6 +2251,12 @@ ${
           .join("");
       }
 
+      function toggleAddJob() {
+        const form = document.getElementById("addJobForm");
+
+        form.style.display = form.style.display === "none" ? "block" : "none";
+      }
+
       // settings
       function goSettings() {
         window.location.href = "settings.html";
@@ -1924,6 +2342,7 @@ ${
       renderNotifMenu();
       updateNotifBadge();
       loadJobs();
+      loadUsers();
       setInterval(async () => {
         if (Date.now() < syncPausedUntil) return;
         if (chatActive) return;

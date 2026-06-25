@@ -239,6 +239,88 @@ ${jobLink}`,
     );
   });
 });
+
+router.post("/:id/assigned-users", (req, res) => {
+  const jobId = req.params.id;
+  const { userId } = req.body;
+
+  db.get("SELECT * FROM jobs WHERE id=?", [jobId], (err, row) => {
+    if (err) return res.status(500).send(err);
+    if (!row) return res.status(404).send("Job not found");
+
+    let data = {};
+    try {
+      data = JSON.parse(row.data || "{}");
+    } catch {}
+
+    if (!Array.isArray(data.assignedUsers)) data.assignedUsers = [];
+
+    db.get(
+      "SELECT id,name,email,phone,role FROM users WHERE id=?",
+      [userId],
+      (err2, user) => {
+        if (err2) return res.status(500).send(err2);
+
+        if (!user) return res.status(404).send("User not found");
+
+        const already = data.assignedUsers.some(
+          (u) => Number(u.id) === Number(user.id),
+        );
+
+        if (!already) {
+          data.assignedUsers.push({
+            id: user.id,
+            name: user.name,
+          });
+        }
+
+        db.run(
+          "UPDATE jobs SET data=? WHERE id=?",
+          [JSON.stringify(data), jobId],
+          (err3) => {
+            if (err3) return res.status(500).send(err3);
+
+            res.json({
+              success: true,
+              assignedUsers: data.assignedUsers,
+            });
+          },
+        );
+      },
+    );
+  });
+});
+router.delete("/:id/assigned-users/:userId", (req, res) => {
+  const jobId = req.params.id;
+  const userId = Number(req.params.userId);
+
+  db.get("SELECT * FROM jobs WHERE id=?", [jobId], (err, row) => {
+    if (err) return res.status(500).send(err);
+    if (!row) return res.status(404).send("Job not found");
+
+    let data = {};
+    try {
+      data = JSON.parse(row.data || "{}");
+    } catch {}
+
+    data.assignedUsers = (data.assignedUsers || []).filter(
+      (u) => Number(u.id) !== userId,
+    );
+
+    db.run(
+      "UPDATE jobs SET data=? WHERE id=?",
+      [JSON.stringify(data), jobId],
+      (err2) => {
+        if (err2) return res.status(500).send(err2);
+
+        res.json({
+          success: true,
+          assignedUsers: data.assignedUsers,
+        });
+      },
+    );
+  });
+});
 router.post("/message/:id", async (req, res) => {
   const { text, image, images, sender, uploadToDrive } = req.body;
   const id = req.params.id;
