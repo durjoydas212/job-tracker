@@ -187,6 +187,10 @@ router.post("/approve/:id", (req, res) => {
 
 router.put("/:id", (req, res) => {
   const { status, notes, data } = req.body;
+  if (data) {
+    delete data.messages;
+    delete data.chatImages;
+}
   const id = req.params.id;
 
   db.get("SELECT * FROM jobs WHERE id=?", [id], (err, row) => {
@@ -198,11 +202,19 @@ router.put("/:id", (req, res) => {
       oldData = JSON.parse(row.data || "{}");
     } catch {}
 
+    // Always preserve latest messages
     const newData = {
       ...oldData,
       ...data,
     };
 
+    if (oldData.messages) {
+      newData.messages = oldData.messages;
+    }
+
+    if (oldData.chatImages) {
+      newData.chatImages = oldData.chatImages;
+    }
     db.run(
       `UPDATE jobs SET 
         status = COALESCE(?, status),

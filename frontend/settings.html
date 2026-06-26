@@ -65,11 +65,23 @@
 
     <!-- ADD USER -->
     <div class="container">
-      <div style="margin-bottom: 20px">
+      <div
+        style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap"
+      >
         <input id="name" placeholder="Name" />
+
+        <input id="email" placeholder="Email" type="email" autocomplete="new-email"/>
+
         <input id="phone" placeholder="Phone" />
-        <input id="userPassword" placeholder="Password" />
-        <button onclick="addUser()">Add User</button>
+
+        <input id="userPassword" placeholder="Password" type="password"   autocomplete="new-password" />
+
+        <select id="userRole">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+
+        <button onclick="addUser()">Add</button>
       </div>
     </div>
 
@@ -155,13 +167,15 @@
 
       async function addUser() {
         const name = document.getElementById("name").value.trim();
+        const email = document.getElementById("email").value.trim();
         const phone = document.getElementById("phone").value.trim();
         const password = document.getElementById("userPassword").value.trim();
+        const role = document.getElementById("userRole").value;
 
-        if (!phone || !password) {
-          alert("All fields required");
-          return;
-        }
+        if ((!email && !phone) || !password) {
+    alert("Please enter Email or Phone, and Password.");
+    return;
+}
 
         const res = await fetch(`${API}/auth/add-user`, {
           method: "POST",
@@ -169,8 +183,15 @@
             "Content-Type": "application/json",
             "x-admin-id": currentUser.id,
           },
-          body: JSON.stringify({ name, phone, password }),
+          body: JSON.stringify({
+            name,
+            email,
+            phone,
+            password,
+            role,
+          }),
         });
+        document.getElementById("email").value = "";
 
         const data = await res.json();
         if (!res.ok) return alert(data.message || "Add user failed");

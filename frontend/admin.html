@@ -200,7 +200,7 @@
 
         <input
           id="customerName"
-          class="form-control mb-2"
+          class="form-control mb-2 mt-2"
           placeholder="Customer Name"
         />
 
@@ -272,6 +272,45 @@
           id="lightbox-img"
           style="max-width: 90%; max-height: 90%; border-radius: 10px"
         />
+      </div>
+      <div class="modal fade" id="editJobModal">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5>Edit Job Details</h5>
+              <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+              <input type="hidden" id="editJobId" />
+
+              <label>Customer Name</label>
+              <input id="editCustomerName" class="form-control mb-2" />
+
+              <label>Customer Phone</label>
+              <input id="editCustomerPhone" class="form-control mb-2" />
+
+              <label>Customer Email</label>
+              <input id="editCustomerEmail" class="form-control mb-2" />
+
+              <label>Customer Address</label>
+              <input id="editCustomerAddress" class="form-control mb-2" />
+
+              <label>Notes</label>
+              <textarea id="editNotes" class="form-control"></textarea>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn btn-secondary" data-bs-dismiss="modal">
+                Cancel
+              </button>
+
+              <button class="btn btn-primary" onclick="saveEditedJob()">
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1190,125 +1229,8 @@
             dateStyle: "medium",
             timeStyle: "short",
           });
-          let actionHTML = "";
+          let actionHTML = getActionButtons(job);
 
-          if (job.status === "Approved") {
-            actionHTML = `
-    <div class="d-flex align-items-start gap-2">
-
-      <button class="btn btn-secondary btn-sm" disabled>
-        Approved
-      </button>
-
-      <div class="dropdown">
-        <button
-          class="btn btn-light border btn-sm"
-          type="button"
-          data-bs-toggle="dropdown"
-          style="font-size:18px; line-height:1;"
-        >
-          ⋮
-        </button>
-
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li>
-            <button
-              class="dropdown-item text-danger"
-              onclick="deleteJob('${job.job_number}')"
-            >
-              Delete Job
-            </button>
-          </li>
-        </ul>
-      </div>
-
-    </div>
-  `;
-          } else if (job.status === "Declined") {
-            actionHTML = `
-    <div class="d-flex align-items-start gap-2">
-
-      <button
-        type="button"
-        onclick="resendJob(${job.id})"
-        class="btn btn-warning btn-sm"
-      >
-        Send Back
-      </button>
-
-      <div class="dropdown">
-        <button
-          class="btn btn-light border btn-sm"
-          type="button"
-          data-bs-toggle="dropdown"
-          style="font-size:18px; line-height:1;"
-        >
-          ⋮
-        </button>
-
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li>
-            <button
-              class="dropdown-item text-danger"
-              onclick="deleteJob('${job.job_number}')"
-            >
-              Delete Job
-            </button>
-          </li>
-        </ul>
-      </div>
-
-    </div>
-  `;
-          } else {
-            actionHTML = `
-    <div class="d-flex align-items-start gap-2">
-
-      <div>
-        <button
-          type="button"
-          onclick="approve(${job.id})"
-          class="btn btn-success btn-sm mb-1"
-        >
-          Approve
-        </button>
-
-        <br>
-
-        <button
-          type="button"
-          onclick="decline(${job.id})"
-          class="btn btn-danger btn-sm mt-1"
-        >
-          Decline
-        </button>
-      </div>
-
-      <div class="dropdown">
-        <button
-          class="btn btn-light border btn-sm"
-          type="button"
-          data-bs-toggle="dropdown"
-          style="font-size:18px; line-height:1;"
-        >
-          ⋮
-        </button>
-
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li>
-            <button
-              class="dropdown-item text-danger"
-              onclick="deleteJob('${job.job_number}')"
-            >
-              Delete Job
-            </button>
-          </li>
-        </ul>
-      </div>
-
-    </div>
-  `;
-          }
           const row = document.createElement("tr");
           row.setAttribute("data-job-row", `${job.id}`);
           row.className =
@@ -1320,7 +1242,27 @@
 
           row.innerHTML = `
       <td>${job.job_number}</td>
-      <td>${job.status}</td>
+      <td>
+
+    ${job.status}
+
+    ${
+      job.data?.locked
+        ? `<span class="badge bg-warning text-dark ms-2">
+             🔒 Locked
+           </span>`
+        : ""
+    }
+
+    ${
+      job.data?.closed
+        ? `<span class="badge bg-dark ms-2">
+             📁 Closed
+           </span>`
+        : ""
+    }
+
+</td>
       
       <td colspan="2">
   <strong>DATE:</strong> ${date}<br>
@@ -1470,11 +1412,13 @@ ${
 }
 
 </div>
-<div style="
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-top:10px;
+<div
+id="chat-input-${job.id}"
+style="
+display:flex;
+align-items:center;
+gap:10px;
+margin-top:10px;
 ">
 
   <label style="
@@ -1547,11 +1491,276 @@ ${
               chat.scrollTop = chat.scrollHeight;
             }
           }, 50);
+          updateChatInput(job);
         });
 
         document.getElementById("totalJobs").innerText = total;
         document.getElementById("approvedJobs").innerText = approved;
         document.getElementById("pendingJobs").innerText = pending;
+      }
+
+      function updateChatInput(job) {
+        const input = document.getElementById(`chat-input-${job.id}`);
+        if (!input) return;
+
+        if (job.data?.closed) {
+          input.innerHTML = `
+            <div class="alert alert-warning w-100 text-center mb-0">
+                📁 This job has been closed. Chat disabled.
+            </div>
+        `;
+
+          return;
+        }
+
+        if (job.data?.locked) {
+          input.innerHTML = `
+            <div class="alert alert-secondary w-100 text-center mb-0">
+                🔒 This job has been locked. Chat disabled.
+            </div>
+        `;
+
+          return;
+        }
+      }
+
+      // action button
+      function getActionButtons(job) {
+        return `
+    <div class="dropdown">
+
+      <button
+        class="btn btn-light border btn-sm"
+        data-bs-toggle="dropdown"
+      >
+        ⋮
+      </button>
+
+      <ul class="dropdown-menu dropdown-menu-end">
+
+        ${
+          job.status !== "Approved"
+            ? `
+            <li>
+              <button class="dropdown-item text-success"
+                onclick="approve(${job.id})">
+                ✅ Approve
+              </button>
+            </li>
+
+            <li>
+              <button class="dropdown-item text-danger"
+                onclick="decline(${job.id})">
+                ❌ Decline
+              </button>
+            </li>
+
+            <li><hr class="dropdown-divider"></li>
+          `
+            : ""
+        }
+
+        <li>
+          <button class="dropdown-item"
+            onclick="editJob(${job.id})">
+            ✏ Edit Job
+          </button>
+        </li>
+
+        <li><hr class="dropdown-divider"></li>
+
+        <li>
+          <button class="dropdown-item"
+            onclick="changeStatus(${job.id},'Started')">
+            Started
+          </button>
+        </li>
+
+        <li>
+          <button class="dropdown-item"
+            onclick="changeStatus(${job.id},'Incomplete')">
+            Incomplete
+          </button>
+        </li>
+
+        <li>
+          <button class="dropdown-item"
+            onclick="changeStatus(${job.id},'Complete')">
+            Complete
+          </button>
+        </li>
+
+        <li>
+          <button class="dropdown-item"
+            onclick="changeStatus(${job.id},'Call Back')">
+            Call Back
+          </button>
+        </li>
+
+        <li>
+          <button class="dropdown-item"
+            onclick="changeStatus(${job.id},'Change Order')">
+            Change Order
+          </button>
+        </li>
+
+        <li><hr class="dropdown-divider"></li>
+
+        <li>
+          <button class="dropdown-item"
+            onclick="toggleLock(${job.id})">
+            ${job.data?.locked ? "🔓 Unlock Job" : "🔒 Lock Job"}
+          </button>
+        </li>
+
+        <li>
+          <button class="dropdown-item"
+            onclick="toggleClose(${job.id})">
+            ${job.data?.closed ? "📂 Reopen Job" : "📁 Close Job"}
+          </button>
+        </li>
+
+        <li><hr class="dropdown-divider"></li>
+
+        <li>
+          <button class="dropdown-item text-danger"
+            onclick="deleteJob('${job.job_number}')">
+            🗑 Delete Job
+          </button>
+        </li>
+
+      </ul>
+
+    </div>
+  `;
+      }
+
+      async function changeStatus(jobId, status) {
+        await fetch(`${API}/jobs/${jobId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status,
+          }),
+        });
+
+        loadJobs();
+      }
+      async function toggleLock(jobId) {
+        const job = allJobs.find((j) => j.id == jobId);
+
+        const data = { ...(job.data || {}) };
+        data.locked = !data.locked;
+
+        const res = await fetch(`${API}/jobs/${jobId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ data }),
+        });
+
+        if (!res.ok) {
+          alert("Failed to update job");
+          return;
+        }
+
+        // Update local data
+        job.data = data;
+
+        // Refresh everything once after backend has saved
+        setTimeout(() => {
+          loadJobs();
+        }, 1000);
+      }
+      async function toggleClose(jobId) {
+        const job = allJobs.find((j) => j.id == jobId);
+
+        const data = { ...(job.data || {}) };
+        data.closed = !data.closed;
+
+        const res = await fetch(`${API}/jobs/${jobId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ data }),
+        });
+
+        if (!res.ok) {
+          alert("Failed to update job");
+          return;
+        }
+
+        // Update local data
+        job.data = data;
+
+        // Refresh everything once after backend has saved
+        setTimeout(() => {
+          loadJobs();
+        }, 1000);
+      }
+
+      // edit job function
+      function editJob(jobId) {
+        const job = allJobs.find((j) => j.id == jobId);
+        if (!job) return;
+
+        const d = job.data || {};
+
+        document.getElementById("editJobId").value = job.id;
+
+        document.getElementById("editCustomerName").value =
+          d.customerName || "";
+
+        document.getElementById("editCustomerPhone").value =
+          d.customerPhone || "";
+
+        document.getElementById("editCustomerEmail").value =
+          d.customerEmail || "";
+
+        document.getElementById("editCustomerAddress").value =
+          d.customerAddress || "";
+
+        document.getElementById("editNotes").value = job.notes || "";
+
+        new bootstrap.Modal(document.getElementById("editJobModal")).show();
+      }
+      async function saveEditedJob() {
+        const jobId = document.getElementById("editJobId").value;
+
+        const job = allJobs.find((j) => j.id == jobId);
+
+        if (!job) return;
+
+        const data = {
+          ...(job.data || {}),
+          customerName: document.getElementById("editCustomerName").value,
+          customerPhone: document.getElementById("editCustomerPhone").value,
+          customerEmail: document.getElementById("editCustomerEmail").value,
+          customerAddress: document.getElementById("editCustomerAddress").value,
+        };
+
+        const notes = document.getElementById("editNotes").value;
+
+        await fetch(`${API}/jobs/${jobId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            notes,
+            data,
+          }),
+        });
+
+        bootstrap.Modal.getInstance(
+          document.getElementById("editJobModal"),
+        ).hide();
+
+        loadJobs();
       }
 
       function renderAssignedUsers(job) {
@@ -1934,17 +2143,6 @@ ${
         const row = document
           .querySelector(`button[onclick="decline(${jobId})"]`)
           ?.closest("tr");
-
-        if (row) {
-          row.classList.remove("table-success");
-          row.classList.add("table-danger");
-
-          const statusCell = row.children[1];
-          statusCell.innerText = "Declined";
-
-          const actionCell = row.lastElementChild;
-          actionCell.innerHTML = `<button type="button" onclick="resendJob(${jobId})" class="btn btn-warning btn-sm">Send Back</button>`;
-        }
       }
 
       // ================= RESEND =================
@@ -2047,7 +2245,7 @@ ${
             images: uploadedImages,
           }),
         });
-
+        job.data.messages = updatedMessages;
         textInput.value = "";
 
         fileInput.value = "";
@@ -2153,21 +2351,25 @@ ${
 
           const messages = d.messages || [];
 
+          // Keep the newest messages already on screen
+          const currentCount = Number(chat.dataset.msgCount || 0);
+
+          if (messages.length < currentCount) {
+            return;
+          }
+
           if (messages.length === 0) {
             chat.innerHTML = `
-    <div style="
-      color:#666;
-      text-align:center;
-      padding:10px;
-    ">
-      No messages yet
-    </div>
-  `;
+        <div style="color:#666;text-align:center;padding:10px;">
+            No messages yet
+        </div>
+    `;
           } else {
             chat.innerHTML = renderChatMessages(messages);
           }
 
           chat.dataset.msgCount = newCount;
+          updateChatInput(job);
 
           if (newCount > oldCount && isNearBottom) {
             chat.scrollTop = chat.scrollHeight;

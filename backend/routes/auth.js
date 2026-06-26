@@ -136,16 +136,18 @@ router.get("/users", requireAdmin, (req, res) => {
 
 // ================= ADD USER (ADMIN ONLY) =================
 router.post("/add-user", requireAdmin, async (req, res) => {
-  const { name, email, phone, password } = req.body;
+  const { name, email, phone, password, role } = req.body;
 
-  if (!phone || !password) {
-    return res.status(400).json({ message: "Phone and password required" });
+  if ((!phone && !email) || !password) {
+    return res.status(400).json({
+      message: "Email or Phone and password required",
+    });
   }
 
   try {
     db.get(
       "SELECT * FROM users WHERE phone=? OR email=?",
-      [phone, email || ""],
+      [phone || "", email || ""],
       async (err, existing) => {
         if (err) {
           console.log("CHECK ERROR:", err);
@@ -153,14 +155,30 @@ router.post("/add-user", requireAdmin, async (req, res) => {
         }
 
         if (existing) {
-          return res.status(400).json({ message: "User already exists" });
+          if (email && existing.email === email) {
+            return res.status(400).json({
+              message: "Email already exists",
+            });
+          }
+
+          if (phone && existing.phone === phone) {
+            return res.status(400).json({
+              message: "Phone already exists",
+            });
+          }
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
         db.run(
-          "INSERT INTO users (name, email, phone, password, role) VALUES (?, ?, ?, ?, 'user')",
-          [name || "User", email || null, phone, hashedPassword],
+          "INSERT INTO users (name, email, phone, password, role) VALUES (?, ?, ?, ?, ?)",
+          [
+            name || "User",
+            email || null,
+            phone || null,
+            hashedPassword,
+            role || "user",
+          ],
           function (err) {
             if (err) {
               console.log("ADD USER ERROR:", err);
