@@ -70,11 +70,21 @@
       >
         <input id="name" placeholder="Name" />
 
-        <input id="email" placeholder="Email" type="email" autocomplete="new-email"/>
+        <input
+          id="email"
+          placeholder="Email"
+          type="email"
+          autocomplete="new-email"
+        />
 
         <input id="phone" placeholder="Phone" />
 
-        <input id="userPassword" placeholder="Password" type="password"   autocomplete="new-password" />
+        <input
+          id="userPassword"
+          placeholder="Password"
+          type="password"
+          autocomplete="new-password"
+        />
 
         <select id="userRole">
           <option value="user">User</option>
@@ -86,17 +96,36 @@
     </div>
 
     <!-- USERS TABLE -->
+
     <div class="container">
-      <table border="1" cellpadding="10" width="100% ">
+      <h3 class="mt-5">Users</h3>
+
+      <table class="table table-bordered">
         <thead>
           <tr>
             <th>Name</th>
             <th>Phone</th>
-            <th>Role</th>
             <th>Action</th>
           </tr>
         </thead>
+
         <tbody id="userTable"></tbody>
+      </table>
+    </div>
+
+    <div class="container">
+      <h3 class="mt-4">Admins</h3>
+
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody id="adminTable"></tbody>
       </table>
     </div>
 
@@ -146,22 +175,48 @@
 
       async function loadUsers() {
         const res = await fetch(`${API}/auth/users`, {
-          headers: { "x-admin-id": currentUser.id },
+          headers: {
+            "x-admin-id": currentUser.id,
+          },
         });
+
         const users = await res.json();
-        const table = document.getElementById("userTable");
-        table.innerHTML = "";
+
+        const userTable = document.getElementById("userTable");
+        const adminTable = document.getElementById("adminTable");
+
+        userTable.innerHTML = "";
+        adminTable.innerHTML = "";
 
         users.forEach((user) => {
-          if (!user.phone) return;
-          table.innerHTML += `
-        <tr>
-          <td>${user.name || "-"}</td>
-          <td>${user.phone}</td>
-          <td>${user.role || "user"}</td>
-          <td><button onclick="deleteUser(${user.id})">Delete</button></td>
-        </tr>
-      `;
+          if (user.role === "admin") {
+            adminTable.innerHTML += `
+                <tr>
+                    <td>${user.name || "-"}</td>
+                    <td>${user.email || "-"}</td>
+                    <td>
+                        ${
+                          user.id == currentUser.id
+                            ? "<span class='text-muted'>Current Admin</span>"
+                            : `<button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">Delete</button>`
+                        }
+                    </td>
+                </tr>
+            `;
+          } else {
+            userTable.innerHTML += `
+                <tr>
+                    <td>${user.name || "-"}</td>
+                    <td>${user.phone || "-"}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm"
+                            onclick="deleteUser(${user.id})">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+          }
         });
       }
 
@@ -173,9 +228,9 @@
         const role = document.getElementById("userRole").value;
 
         if ((!email && !phone) || !password) {
-    alert("Please enter Email or Phone, and Password.");
-    return;
-}
+          alert("Please enter Email or Phone, and Password.");
+          return;
+        }
 
         const res = await fetch(`${API}/auth/add-user`, {
           method: "POST",

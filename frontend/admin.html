@@ -8,6 +8,10 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
     <style>
       input,
       select,
@@ -140,13 +144,88 @@
         </div>
       </div>
 
-      <input
-        type="text"
-        id="searchInput"
-        class="form-control mb-3 mt-4 shadow-sm"
-        placeholder="Search by Job Number..."
-        onkeyup="filterJobs()"
-      />
+      <div class="d-flex gap-2 mb-3 mt-4">
+        <input
+          type="text"
+          id="searchInput"
+          class="form-control shadow-sm"
+          placeholder="Search by Job #, Name, Phone, Address..."
+          onkeyup="filterJobs()"
+        />
+
+        <button class="btn btn-outline-secondary" data-bs-toggle="dropdown">
+          <i class="bi bi-funnel"></i>
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <a class="dropdown-item" href="#" onclick="filterStatus('all')"
+              >All Jobs</a
+            >
+          </li>
+
+          <li><hr class="dropdown-divider" /></li>
+
+          <li>
+            <a
+              class="dropdown-item text-success"
+              href="#"
+              onclick="filterStatus('Approved')"
+              >Approved</a
+            >
+          </li>
+
+          <li>
+            <a
+              class="dropdown-item text-danger"
+              href="#"
+              onclick="filterStatus('Declined')"
+              >Declined</a
+            >
+          </li>
+
+          <li><hr class="dropdown-divider" /></li>
+
+          <li>
+            <a class="dropdown-item" href="#" onclick="filterStatus('Started')"
+              >Started</a
+            >
+          </li>
+
+          <li>
+            <a
+              class="dropdown-item"
+              href="#"
+              onclick="filterStatus('Incomplete')"
+              >Incomplete</a
+            >
+          </li>
+
+          <li>
+            <a class="dropdown-item" href="#" onclick="filterStatus('Complete')"
+              >Complete</a
+            >
+          </li>
+
+          <li>
+            <a
+              class="dropdown-item"
+              href="#"
+              onclick="filterStatus('Call Back')"
+              >Call Back</a
+            >
+          </li>
+
+          <li>
+            <a
+              class="dropdown-item"
+              href="#"
+              onclick="filterStatus('Change Order')"
+              >Change Order</a
+            >
+          </li>
+        </ul>
+      </div>
 
       <!-- FROM SECTION  -->
       <div
@@ -321,6 +400,7 @@
       let knownJobs = new Set();
       let knownStatuses = {};
       let usersCount = 0;
+      const expandedJobs = {};
       document.addEventListener("submit", function (e) {
         e.preventDefault();
       });
@@ -923,18 +1003,48 @@
       }
 
       // ================= FILTER =================
+      let currentStatusFilter = "all";
+      function filterStatus(status) {
+        currentStatusFilter = status;
+        filterJobs();
+      }
       function filterJobs() {
         const search = document
           .getElementById("searchInput")
-          .value.toLowerCase();
+          .value.toLowerCase()
+          .trim();
 
-        let filtered = allJobs;
+        let filtered = [...allJobs];
 
+        // Search
         if (search) {
-          filtered = allJobs.filter((job) =>
-            String(job.job_number || "")
-              .toLowerCase()
-              .includes(search),
+          filtered = filtered.filter((job) => {
+            const d = job.data || {};
+
+            return (
+              String(job.job_number || "")
+                .toLowerCase()
+                .includes(search) ||
+              String(d.customerName || "")
+                .toLowerCase()
+                .includes(search) ||
+              String(d.customerPhone || "")
+                .toLowerCase()
+                .includes(search) ||
+              String(d.customerEmail || "")
+                .toLowerCase()
+                .includes(search) ||
+              String(d.customerAddress || "")
+                .toLowerCase()
+                .includes(search)
+            );
+          });
+        }
+
+        // Status Filter
+        if (currentStatusFilter !== "all") {
+          filtered = filtered.filter(
+            (job) => job.status === currentStatusFilter,
           );
         }
 
@@ -1007,7 +1117,7 @@
     `;
         }
 
-        // 3 images -> WhatsApp-like layout
+        // 3 images
         if (total === 3) {
           return `
       <div style="
@@ -1055,7 +1165,7 @@
     `;
         }
 
-        // 4+ images -> 2x2 with +N on 4th
+        // 4+ images
         const shown = imgs.slice(0, 4);
 
         return `
@@ -1264,41 +1374,38 @@
 
 </td>
       
-      <td colspan="2">
-  <strong>DATE:</strong> ${date}<br>
- 
+     <td colspan="2">
 
-  ${Object.entries(d)
-    .filter(
-      ([key]) =>
-        ![
-          "images",
-          "tags",
-          "messages",
-          "instructions",
-          "instruction",
-          "beforeImages",
-          "afterImages",
-          "issueImages",
-          "chatImages",
-          "uploadToDrive",
-          "driveUploaded",
-          "createdByAdmin",
-          "closed",
-          "locked",
-          "assignedUsers",
-        ].includes(key),
-    )
-    .map(
-      ([key, val]) =>
-        `<strong>${key.replace(/_/g, " ").toUpperCase()}:</strong> ${val || "-"}<br>`,
-    )
-    .join("")}
- <strong>NOTES:</strong> ${job.notes || "-"}<br>
+<strong>DATE:</strong> ${date}<br>
+
+<strong>CUSTOMER NAME:</strong> ${d.customerName || "-"}<br>
+
+<strong>CUSTOMER PHONE:</strong> ${d.customerPhone || "-"}<br>
+
+<div class="text-center my-2">
+    <button
+        class="btn btn-outline-secondary btn-sm rounded-pill"
+        onclick="toggleMore(${job.id}, this)">
+        ${expandedJobs[job.id] ? "▲ Hide Details" : "▼ See More"}
+    </button>
+</div>
+
+<div id="more-${job.id}" style="display:${expandedJobs[job.id] ? "block" : "none"};">
+
+<strong>CUSTOMER EMAIL:</strong> ${d.customerEmail || "-"}<br>
+
+<strong>CUSTOMER ADDRESS:</strong> ${d.customerAddress || "-"}<br>
+
+<strong>NOTES:</strong> ${job.notes || "-"}<br>
+
+
+
+
+
 <strong>ASSIGNED USERS:</strong>
 
 <div id="assigned-users-${job.id}" class="mt-2">
-  ${renderAssignedUsers(job)}
+    ${renderAssignedUsers(job)}
 </div>
 
  ${
@@ -1344,6 +1451,7 @@ ${
       </button>
     `
 }
+</div>
 </div>
 
 <div id="chat-${job.id}"
@@ -1544,14 +1652,14 @@ margin-top:10px;
             <li>
               <button class="dropdown-item text-success"
                 onclick="approve(${job.id})">
-                ✅ Approve
+                Approve
               </button>
             </li>
 
             <li>
               <button class="dropdown-item text-danger"
                 onclick="decline(${job.id})">
-                ❌ Decline
+                Decline
               </button>
             </li>
 
@@ -1563,7 +1671,7 @@ margin-top:10px;
         <li>
           <button class="dropdown-item"
             onclick="editJob(${job.id})">
-            ✏ Edit Job
+            Edit Job
           </button>
         </li>
 
@@ -1674,6 +1782,20 @@ margin-top:10px;
         setTimeout(() => {
           loadJobs();
         }, 1000);
+      }
+
+      function toggleMore(jobId, btn) {
+        expandedJobs[jobId] = !expandedJobs[jobId];
+
+        const box = document.getElementById("more-" + jobId);
+
+        if (expandedJobs[jobId]) {
+          box.style.display = "block";
+          btn.innerHTML = "▲ Hide Details";
+        } else {
+          box.style.display = "none";
+          btn.innerHTML = "▼ More Details";
+        }
       }
       async function toggleClose(jobId) {
         const job = allJobs.find((j) => j.id == jobId);
@@ -2423,6 +2545,7 @@ margin-top:10px;
 
           allJobs = jobs;
 
+          
           filterJobs();
         } catch (err) {
           console.error("Job update failed", err);
