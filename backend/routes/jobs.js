@@ -190,7 +190,7 @@ router.put("/:id", (req, res) => {
   if (data) {
     delete data.messages;
     delete data.chatImages;
-}
+  }
   const id = req.params.id;
 
   db.get("SELECT * FROM jobs WHERE id=?", [id], (err, row) => {
@@ -332,6 +332,40 @@ router.delete("/:id/assigned-users/:userId", (req, res) => {
     );
   });
 });
+// uplode image
+router.put("/:id/photos", (req, res) => {
+  const { type, images } = req.body;
+  const id = req.params.id;
+
+  db.get("SELECT * FROM jobs WHERE id=?", [id], (err, job) => {
+    if (err) return res.status(500).send(err);
+    if (!job) return res.status(404).json({ message: "Job not found" });
+
+    const data = JSON.parse(job.data || "{}");
+
+    if (type === "before") {
+      data.beforeImages = [...(data.beforeImages || []), ...images];
+    }
+
+    if (type === "after") {
+      data.afterImages = [...(data.afterImages || []), ...images];
+    }
+
+    if (type === "issue") {
+      data.issueImages = [...(data.issueImages || []), ...images];
+    }
+
+    db.run(
+      "UPDATE jobs SET data=? WHERE id=?",
+      [JSON.stringify(data), id],
+      function (err) {
+        if (err) return res.status(500).send(err);
+        res.json({ success: true });
+      },
+    );
+  });
+});
+
 router.post("/message/:id", async (req, res) => {
   const { text, image, images, sender, uploadToDrive } = req.body;
   const id = req.params.id;
