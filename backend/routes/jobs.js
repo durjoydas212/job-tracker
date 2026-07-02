@@ -175,18 +175,39 @@ router.get("/", (req, res) => {
 });
 
 router.post("/approve/:id", (req, res) => {
-  db.run(
-    `UPDATE jobs SET status='Approved' WHERE id=?`,
-    [req.params.id],
-    function (err) {
-      if (err) return res.status(500).send(err);
-      res.send({ success: true });
-    },
-  );
+  db.get("SELECT * FROM jobs WHERE id=?", [req.params.id], (err, row) => {
+    if (err) return res.status(500).send(err);
+
+    let data = JSON.parse(row.data || "{}");
+
+    if (data.requestedStatus) {
+      db.run(
+        `
+                    UPDATE jobs
+                    SET status=?,
+                        data=?
+                    WHERE id=?
+                    `,
+        [
+          data.requestedStatus,
+          JSON.stringify({
+            ...data,
+            requestedStatus: null,
+          }),
+          req.params.id,
+        ],
+        () => {
+          res.json({ success: true });
+        },
+      );
+    } else {
+      res.json({ success: true });
+    }
+  });
 });
 
 router.put("/:id", (req, res) => {
-  const { status, notes, data } = req.body;
+  const { status, notes, data, requestedStatus } = req.body;
   if (data) {
     delete data.messages;
     delete data.chatImages;
@@ -205,11 +226,15 @@ router.put("/:id", (req, res) => {
     // Always preserve latest messages
     const newData = {
       ...oldData,
-      ...data,
+      ...(data || {}),
 
-      locked: data.locked !== undefined ? data.locked : oldData.locked || false,
+      locked:
+        data?.locked !== undefined ? data.locked : oldData.locked || false,
 
-      closed: data.closed !== undefined ? data.closed : oldData.closed || false,
+      closed:
+        data?.closed !== undefined ? data.closed : oldData.closed || false,
+
+      requestedStatus: requestedStatus ?? oldData.requestedStatus ?? null,
     };
 
     if (oldData.messages) {
@@ -219,13 +244,18 @@ router.put("/:id", (req, res) => {
     if (oldData.chatImages) {
       newData.chatImages = oldData.chatImages;
     }
+    let finalStatus = status;
+
+    if (requestedStatus) {
+      finalStatus = row.status;
+    }
     db.run(
       `UPDATE jobs SET 
         status = COALESCE(?, status),
         notes = COALESCE(?, notes),
         data = ?
        WHERE id = ?`,
-      [status, notes, JSON.stringify(newData), id],
+      [finalStatus, notes, JSON.stringify(newData), id],
       async function (err) {
         if (err) return res.status(500).send(err);
 
