@@ -1488,7 +1488,30 @@ ${
           word-break:break-word;
         ">
 
-          ${msg.text ? `<div style="margin-bottom:6px;">${msg.text}</div>` : ""}
+         ${
+           msg.senderName
+             ? `
+<div style="
+font-size:12px;
+font-weight:600;
+color:#0d6efd;
+margin-bottom:4px;
+">
+${msg.senderName}
+</div>
+`
+             : ""
+         }
+
+${
+  msg.text
+    ? `
+<div style="margin-bottom:5px;">
+${msg.text}
+</div>
+`
+    : ""
+}
 
           ${msg.images && msg.images.length ? renderImages(msg.images) : ""}
 
@@ -2349,6 +2372,7 @@ margin-top:10px;
           ...oldMessages,
           {
             sender: "admin",
+            senderName: currentUser.name,
             text: text,
             images: uploadedImages,
             time: new Date().toLocaleString(),
@@ -2363,6 +2387,7 @@ margin-top:10px;
           },
           body: JSON.stringify({
             sender: "admin",
+            senderName: currentUser.name,
             text,
             images: uploadedImages,
           }),
@@ -2545,7 +2570,6 @@ margin-top:10px;
 
           allJobs = jobs;
 
-          
           filterJobs();
         } catch (err) {
           console.error("Job update failed", err);

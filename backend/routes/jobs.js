@@ -193,6 +193,7 @@ router.post("/approve/:id", (req, res) => {
           JSON.stringify({
             ...data,
             requestedStatus: null,
+            statusPending: false,
           }),
           req.params.id,
         ],
@@ -235,6 +236,9 @@ router.put("/:id", (req, res) => {
         data?.closed !== undefined ? data.closed : oldData.closed || false,
 
       requestedStatus: requestedStatus ?? oldData.requestedStatus ?? null,
+
+      statusPending:
+        requestedStatus != null ? true : oldData.statusPending || false,
     };
 
     if (oldData.messages) {
@@ -248,6 +252,9 @@ router.put("/:id", (req, res) => {
 
     if (requestedStatus) {
       finalStatus = row.status;
+    } else {
+      newData.requestedStatus = null;
+      newData.statusPending = false;
     }
     db.run(
       `UPDATE jobs SET 
@@ -429,6 +436,7 @@ router.post("/message/:id", async (req, res) => {
 
     const newMessage = {
       sender,
+      senderName: req.body.senderName,
       text,
       images: images || (image ? [image] : []),
       time: new Date().toLocaleString(),

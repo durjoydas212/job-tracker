@@ -981,7 +981,30 @@ ${jobLocked ? "disabled" : ""}>
           box-shadow:0 1px 2px rgba(0,0,0,0.1);
         ">
 
-          ${msg.text ? `<div style="margin-bottom:5px;">${msg.text}</div>` : ""}
+          ${
+            msg.senderName
+              ? `
+<div style="
+font-size:12px;
+font-weight:600;
+color:#0d6efd;
+margin-bottom:4px;
+">
+${msg.senderName}
+</div>
+`
+              : ""
+          }
+
+${
+  msg.text
+    ? `
+<div style="margin-bottom:5px;">
+${msg.text}
+</div>
+`
+    : ""
+}
 
         ${
           msg.images?.length || msg.image
@@ -1026,83 +1049,79 @@ ${jobLocked ? "disabled" : ""}>
 </div>
 
 
+${
+  jobLocked
+    ? `
+<div class="alert alert-secondary text-center mt-3">
+    🔒 This conversation has been locked by the administrator.
+</div>
+`
+    : `
 <!-- IMAGE PREVIEW -->
-
-<div 
-  id="preview-container-${job.id}" 
-  style="
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    margin-bottom:8px;
-    padding-top:8px;
-  "
+<div
+    id="preview-container-${job.id}"
+    style="
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        margin-bottom:8px;
+        padding-top:8px;
+    "
 ></div>
 
 <div style="display:flex; align-items:center; gap:8px; margin-top:10px;">
 
-  <!-- IMAGE ICON -->
- <label style="cursor:pointer; font-size:20px;">
-  📎
- <input 
-  type="file" 
-  id="img-${job.id}" 
-  ${jobLocked ? "disabled" : ""}
-  multiple 
-  onchange="previewImages(${job.id})"
-  style="display:none;"
->
+<label style="cursor:pointer; font-size:20px;">
+📎
+<input
+type="file"
+id="img-${job.id}"
+multiple
+onchange="previewImages(${job.id})"
+style="display:none;">
 </label>
 
-
-  <!-- TEXT INPUT -->
-
- <textarea 
-  id="reply-${job.id}"
-  ${jobLocked ? "disabled" : ""}
- onkeydown="handleEnter(event, ${job.id})"
-  placeholder="Type message..."
-  style="
-  flex:1;
-  border:none;
-  background:#fff;
-  border-radius:14px;
-  padding:14px;
-  resize:none;
-  height:54px;
-  outline:none;
-  box-shadow:0 2px 10px rgba(0,0,0,0.08);
+<textarea
+id="reply-${job.id}"
+onkeydown="handleEnter(event, ${job.id})"
+placeholder="Type message..."
+style="
+flex:1;
+border:none;
+background:#fff;
+border-radius:14px;
+padding:14px;
+resize:none;
+height:54px;
+outline:none;
+box-shadow:0 2px 10px rgba(0,0,0,.08);
 "></textarea>
 
-
-  <!-- SEND BUTTON -->
-  <button 
-  type="button"
-  onclick="sendMessage(${job.id}); return false;"
-  ${jobLocked ? "disabled" : ""}
-    style="
-  background:#0d6efd;
-  color:white;
-  border:none;
-  border-radius:14px;
-  width:52px;
-  height:52px;
-  font-size:18px;
-  box-shadow:0 2px 8px rgba(13,110,253,0.3);
+<button
+type="button"
+onclick="sendMessage(${job.id}); return false;"
+style="
+background:#0d6efd;
+color:white;
+border:none;
+border-radius:14px;
+width:52px;
+height:52px;
+font-size:18px;
+box-shadow:0 2px 8px rgba(13,110,253,.3);
 ">
-    ➤
-  </button>
+➤
+</button>
 
 </div>
+`
+}
   `;
-          const activeStatuses = [
-            "Pending",
-            "Approved",
-            "Started",
-            "Incomplete",
-            "CallBack",
-            "ChangeOrder",
-          ];
+          if (job.data?.closed) {
+            historyContainer.appendChild(div);
+          } else {
+            myJobsContainer.appendChild(div);
+          }
 
           if (activeStatuses.includes(job.status)) {
             myJobsContainer.appendChild(div);
@@ -1432,6 +1451,7 @@ ${jobLocked ? "disabled" : ""}>
                 text,
                 images: imagePaths,
                 sender: "user",
+                senderName: currentUser.name,
                 uploadToDrive: true,
               }),
             },
