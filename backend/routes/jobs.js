@@ -206,6 +206,10 @@ router.put("/:id", (req, res) => {
     const newData = {
       ...oldData,
       ...data,
+
+      locked: data.locked !== undefined ? data.locked : oldData.locked || false,
+
+      closed: data.closed !== undefined ? data.closed : oldData.closed || false,
     };
 
     if (oldData.messages) {
@@ -342,6 +346,12 @@ router.put("/:id/photos", (req, res) => {
     if (!job) return res.status(404).json({ message: "Job not found" });
 
     const data = JSON.parse(job.data || "{}");
+    if (data.locked || data.closed) {
+      return res.status(403).json({
+        success: false,
+        message: "This job is locked.",
+      });
+    }
 
     if (type === "before") {
       data.beforeImages = [...(data.beforeImages || []), ...images];
@@ -378,6 +388,12 @@ router.post("/message/:id", async (req, res) => {
     try {
       data = JSON.parse(row.data || "{}");
     } catch {}
+    if (data.locked || data.closed) {
+      return res.status(403).json({
+        success: false,
+        message: "This job is locked.",
+      });
+    }
 
     const oldMessages = Array.isArray(data.messages) ? data.messages : [];
 
@@ -571,4 +587,38 @@ router.post("/upload-message-drive/:id", async (req, res) => {
   }
 });
 
+router.put("/:id/lock", (req, res) => {
+  db.get("SELECT * FROM jobs WHERE id=?", [req.params.id], (err, row) => {
+    if (err) return res.status(500).send(err);
+
+    let data = JSON.parse(row.data || "{}");
+
+    data.locked = true;
+
+    db.run(
+      "UPDATE jobs SET data=? WHERE id=?",
+      [JSON.stringify(data), req.params.id],
+      () => {
+        res.json({ success: true });
+      },
+    );
+  });
+});
+router.put("/:id/close", (req, res) => {
+  db.get("SELECT * FROM jobs WHERE id=?", [req.params.id], (err, row) => {
+    if (err) return res.status(500).send(err);
+
+    let data = JSON.parse(row.data || "{}");
+
+    data.closed = true;
+
+    db.run(
+      "UPDATE jobs SET data=? WHERE id=?",
+      [JSON.stringify(data), req.params.id],
+      () => {
+        res.json({ success: true });
+      },
+    );
+  });
+});
 module.exports = router;
