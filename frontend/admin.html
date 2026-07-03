@@ -1398,43 +1398,54 @@
 
 <strong>NOTES:</strong> ${job.notes || "-"}<br>
 
-
-
-
-
 <strong>ASSIGNED USERS:</strong>
 
-<div id="assigned-users-${job.id}" class="mt-2">
-    ${renderAssignedUsers(job)}
+<h5 class="mt-2">
+Before Photos :
+</h5>
+
+${renderImages(
+  beforeImages.map((img) => (typeof img === "string" ? img : img.path)),
+)}
+
+<div class="small text-muted mt-1">
+Uploaded by:
+<b>${
+            [
+              ...new Set(
+                beforeImages
+                  .filter((img) => typeof img !== "string")
+                  .map((img) => img.user),
+              ),
+            ].join(", ") || "-"
+          }</b>
 </div>
 
- ${
-   beforeImages.length
-     ? `
-      <h6 class="mt-2">Before Photos</h6>
-      ${renderImages(beforeImages)}
-    `
-     : ""
- }
+<h5 class="mt-2">
+After Photos :
+</h5>
 
-${
-  afterImages.length
-    ? `
-      <h6 class="mt-2">After Photos</h6>
-      ${renderImages(afterImages)}
-    `
-    : ""
-}
+${renderImages(
+  afterImages.map((img) => (typeof img === "string" ? img : img.path)),
+)}
 
-${
-  issueImages.length
-    ? `
-      <h6 class="mt-2">Issue Photos</h6>
-      ${renderImages(issueImages)}
-    `
-    : ""
-}
+<div class="small text-muted mt-1">
+Uploaded by:
+<b>${[...new Set(afterImages.map((x) => x.user))].join(", ")}</b>
+</div>
 
+<h5 class="mt-2">
+Issue Photos :
+</h5>
+
+${renderImages(
+  issueImages.map((img) => (typeof img === "string" ? img : img.path)),
+)}
+
+<div class="small text-muted mt-1">
+Uploaded by:
+<b>${[...new Set(issueImages.map((x) => x.user))].join(", ")}</b>
+</div>
 <div class="mt-2">
 ${
   d.driveUploaded
@@ -2592,25 +2603,51 @@ margin-top:10px;
         return messages
           .map(
             (msg) => `
-      <div style="
-        display:flex;
-        justify-content:${msg.sender === "admin" ? "flex-end" : "flex-start"};
-        margin:10px 0;
-      ">
-        <div style="
-          background:${msg.sender === "admin" ? "#dbeafe" : "#dcf8c6"};
-          padding:10px;
-          border-radius:12px;
-          max-width:75%;
-        ">
-          ${msg.text || ""}
-          ${msg.images?.length ? renderImages(msg.images) : ""}
-          <div style="font-size:11px;color:#666;">
-            ${msg.time}
-          </div>
-        </div>
-      </div>
-    `,
+<div style="
+display:flex;
+justify-content:${msg.sender === "admin" ? "flex-end" : "flex-start"};
+margin:10px 0;
+">
+
+<div style="
+background:${msg.sender === "admin" ? "#dbeafe" : "#dcf8c6"};
+padding:10px;
+border-radius:12px;
+max-width:75%;
+">
+
+${
+  msg.senderName
+    ? `
+<div style="
+font-size:12px;
+font-weight:600;
+color:#0d6efd;
+margin-bottom:4px;
+">
+${msg.senderName}
+</div>
+`
+    : ""
+}
+
+${msg.text || ""}
+
+${msg.images?.length ? renderImages(msg.images) : ""}
+
+<div style="
+font-size:11px;
+color:#666;
+margin-top:5px;
+text-align:right;
+">
+${msg.time}
+</div>
+
+</div>
+
+</div>
+`,
           )
           .join("");
       }

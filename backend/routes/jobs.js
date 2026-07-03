@@ -390,16 +390,22 @@ router.put("/:id/photos", (req, res) => {
       });
     }
 
+    const uploaded = images.map((img) => ({
+      path: img,
+      user: req.body.user || "Unknown",
+      time: new Date().toLocaleString(),
+    }));
+
     if (type === "before") {
-      data.beforeImages = [...(data.beforeImages || []), ...images];
+      data.beforeImages = [...(data.beforeImages || []), ...uploaded];
     }
 
     if (type === "after") {
-      data.afterImages = [...(data.afterImages || []), ...images];
+      data.afterImages = [...(data.afterImages || []), ...uploaded];
     }
 
     if (type === "issue") {
-      data.issueImages = [...(data.issueImages || []), ...images];
+      data.issueImages = [...(data.issueImages || []), ...uploaded];
     }
 
     db.run(

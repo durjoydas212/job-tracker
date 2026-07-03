@@ -593,85 +593,128 @@
       function renderPhotoSection(job) {
         const d = job.data || {};
         const jobLocked = d.locked || d.closed;
+        const adminStatus = d.adminStatus || job.status || "Pending";
 
         const canUpload = !jobLocked && !["Complete"].includes(job.status);
 
         return `
   
-<h6 class="mt-3">Before Photos</h6>
+<h6 class="mt-3 fw-bold">Before Photos</h6>
 
-${d.beforeImages?.length ? renderJobImages(d.beforeImages) : ""}
+${renderJobImages(d.beforeImages || [])}
 
 ${
-  canUpload
+  !jobLocked
     ? `
-${
-  jobLocked
-    ? `
-<div class="alert alert-warning py-2">
-🔒 Job Locked - Upload Disabled
-</div>
-`
-    : `
+<div class="mt-2 d-flex gap-2 align-items-center">
+
 <input
 type="file"
-multiple
 id="before-${job.id}"
+multiple
+hidden
 onchange="previewBeforeImages(${job.id})">
-`
-}
+
+<label
+for="before-${job.id}"
+class="btn btn-outline-primary btn-sm"
+id="beforeAddBtn-${job.id}">
+<i class="fa-solid fa-image"></i> Add Images
+</label>
+
+<button
+class="btn btn-success btn-sm d-none"
+id="beforeSendBtn-${job.id}"
+onclick="uploadJobPhotos(${job.id},'before')">
+<i class="fa-solid fa-paper-plane"></i> Send
+</button>
+
+</div>
+
+<div
+id="beforePreview-${job.id}"
+class="d-flex flex-wrap gap-2 mt-2">
+</div>
 `
     : ""
 }
 
-<h6 class="mt-3">After Photos</h6>
+<h6 class="mt-3 fw-bold">After Photos</h6>
 
-${d.afterImages?.length ? renderJobImages(d.afterImages) : ""}
+${renderJobImages(d.afterImages || [])}
 
 ${
-  canUpload
+  !jobLocked
     ? `
-${
-  jobLocked
-    ? `
-<div class="alert alert-warning py-2">
-🔒 Job Locked - Upload Disabled
-</div>
-`
-    : `
+<div class="mt-2 d-flex gap-2 align-items-center">
+
 <input
 type="file"
-multiple
 id="after-${job.id}"
-onchange="previewBeforeImages(${job.id})">
-`
-}
+multiple
+hidden
+onchange="previewAfterImages(${job.id})">
+
+<label
+for="after-${job.id}"
+class="btn btn-outline-primary btn-sm"
+id="afterAddBtn-${job.id}">
+<i class="fa-solid fa-image"></i> Add Images
+</label>
+
+<button
+class="btn btn-success btn-sm d-none"
+id="afterSendBtn-${job.id}"
+onclick="uploadJobPhotos(${job.id},'after')">
+<i class="fa-solid fa-paper-plane"></i> Send
+</button>
+
+</div>
+
+<div
+id="afterPreview-${job.id}"
+class="d-flex flex-wrap gap-2 mt-2">
+</div>
 `
     : ""
 }
 
-<h6 class="mt-3">Issue Photos</h6>
+<h6 class="mt-3 fw-bold">Issue Photos</h6>
 
-${d.issueImages?.length ? renderJobImages(d.issueImages) : ""}
+${renderJobImages(d.issueImages || [])}
 
 ${
-  canUpload
+  !jobLocked
     ? `
-${
-  jobLocked
-    ? `
-<div class="alert alert-warning py-2">
-🔒 Job Locked - Upload Disabled
-</div>
-`
-    : `
+<div class="mt-2 d-flex gap-2 align-items-center">
+
 <input
 type="file"
-multiple
 id="issue-${job.id}"
-onchange="previewBeforeImages(${job.id})">
-`
-}
+multiple
+hidden
+onchange="previewIssueImages(${job.id})">
+
+<label
+for="issue-${job.id}"
+class="btn btn-outline-primary btn-sm"
+id="issueAddBtn-${job.id}">
+<i class="fa-solid fa-image"></i> Add Images
+</label>
+
+<button
+class="btn btn-success btn-sm d-none"
+id="issueSendBtn-${job.id}"
+onclick="uploadJobPhotos(${job.id},'issue')">
+<i class="fa-solid fa-paper-plane"></i> Send
+</button>
+
+</div>
+
+<div
+id="issuePreview-${job.id}"
+class="d-flex flex-wrap gap-2 mt-2">
+</div>
 `
     : ""
 }
@@ -696,6 +739,7 @@ onchange="previewBeforeImages(${job.id})">
             body: JSON.stringify({
               type,
               images: uploadedImages,
+              user: currentUser.name,
             }),
           });
 
@@ -708,6 +752,29 @@ onchange="previewBeforeImages(${job.id})">
 
           // Clear input
           input.value = "";
+
+          if (type === "before") {
+            document.getElementById(`beforePreview-${jobId}`).innerHTML = "";
+            document
+              .getElementById(`beforeSendBtn-${jobId}`)
+              .classList.add("d-none");
+          }
+
+          if (type === "after") {
+            document.getElementById(`afterPreview-${jobId}`).innerHTML = "";
+            document
+              .getElementById(`afterSendBtn-${jobId}`)
+              .classList.add("d-none");
+          }
+
+          if (type === "issue") {
+            document.getElementById(`issuePreview-${jobId}`).innerHTML = "";
+            document
+              .getElementById(`issueSendBtn-${jobId}`)
+              .classList.add("d-none");
+          }
+
+          loadHistory();
 
           // Reload jobs
           loadHistory();
@@ -782,6 +849,7 @@ onchange="previewBeforeImages(${job.id})">
           const d = job.data || {};
 
           const jobLocked = d.locked || d.closed;
+          const adminStatus = d.adminStatus || job.status || "Pending";
           let tags = [];
 
           if (d.tags) {
@@ -900,11 +968,21 @@ Save
         : ""
     }
 ${
-  job.status === "Approved"
+  adminStatus === "Approved"
     ? '<div class="bg-success text-white text-center rounded p-1">Approved</div>'
-    : job.status === "Declined"
+    : adminStatus === "Declined"
       ? '<div class="bg-danger text-white text-center rounded p-1">Declined</div>'
-      : '<div class="bg-warning text-dark text-center rounded p-1">Pending</div>'
+      : adminStatus === "Started"
+        ? '<div class="bg-primary text-white text-center rounded p-1">Started</div>'
+        : adminStatus === "Incomplete"
+          ? '<div class="bg-danger text-white text-center rounded p-1">Incomplete</div>'
+          : adminStatus === "Complete"
+            ? '<div class="bg-success text-white text-center rounded p-1">Complete</div>'
+            : adminStatus === "Call Back"
+              ? '<div class="bg-info text-white text-center rounded p-1">Call Back</div>'
+              : adminStatus === "Change Order"
+                ? '<div class="bg-secondary text-white text-center rounded p-1">Change Order</div>'
+                : '<div class="bg-warning text-dark text-center rounded p-1">Pending</div>'
 }
     <br>
     <strong>Customer Name:</strong>
@@ -912,6 +990,29 @@ ${d.customerName || "-"}<br>
 
 <strong>Customer Phone:</strong>
 ${d.customerPhone || "-"}<br>
+
+<div class="text-center ">
+
+<button
+class="btn btn-outline-secondary btn-sm"
+type="button"
+onclick="toggleDetails(${job.id})">
+
+<i
+id="arrow-${job.id}"
+class="fa-solid fa-chevron-down">
+</i>
+
+See More
+
+</button>
+
+</div>
+<div
+id="details-${job.id}"
+style="display:none;">
+
+
 
 <strong>Customer Email:</strong> 
 ${d.customerEmail || "-"}<br>
@@ -946,7 +1047,7 @@ ${jobLocked ? "disabled" : ""}>
       </div>
     `
 }
-
+</div>
 <br>
 
 <div
@@ -1123,11 +1224,6 @@ box-shadow:0 2px 8px rgba(13,110,253,.3);
             myJobsContainer.appendChild(div);
           }
 
-          if (activeStatuses.includes(job.status)) {
-            myJobsContainer.appendChild(div);
-          } else {
-            historyContainer.appendChild(div);
-          }
           const draft = draftReplies[`reply-${job.id}`];
 
           if (draft !== undefined) {
@@ -1195,6 +1291,23 @@ box-shadow:0 2px 8px rgba(13,110,253,.3);
         hideStatusEditor(jobId);
 
         loadHistory();
+      }
+
+      function toggleDetails(jobId) {
+        const details = document.getElementById(`details-${jobId}`);
+        const arrow = document.getElementById(`arrow-${jobId}`);
+
+        if (details.style.display === "none") {
+          details.style.display = "block";
+
+          arrow.classList.remove("fa-chevron-down");
+          arrow.classList.add("fa-chevron-up");
+        } else {
+          details.style.display = "none";
+
+          arrow.classList.remove("fa-chevron-up");
+          arrow.classList.add("fa-chevron-down");
+        }
       }
       function showStatusEditor(jobId) {
         document.getElementById(`statusEditor-${jobId}`).style.display =
@@ -1478,26 +1591,39 @@ box-shadow:0 2px 8px rgba(13,110,253,.3);
           messageDiv.style.margin = "6px 0";
 
           messageDiv.innerHTML = `
-  <div style="
-    background:#dcf8c6;
-    padding:10px;
-    border-radius:12px;
-    max-width:70%;
-  ">
+<div
+style="
+background:#dcf8c6;
+padding:10px;
+border-radius:12px;
+max-width:70%;
+">
 
-    ${text ? `<div style="margin-bottom:5px;">${text}</div>` : ""}
+<div
+style="
+font-size:12px;
+font-weight:bold;
+color:#0d6efd;
+margin-bottom:4px;
+">
+${currentUser.name}
+</div>
 
-    ${imagePaths.length ? renderImages(imagePaths) : ""}
+${text ? `<div style="margin-bottom:5px;">${text}</div>` : ""}
 
-    <div style="
-      font-size:11px;
-      color:#666;
-      margin-top:5px;
-      text-align:right;
-    ">
-      ${new Date().toLocaleTimeString()}
-    </div>
-  </div>
+${imagePaths.length ? renderImages(imagePaths) : ""}
+
+<div
+style="
+font-size:11px;
+color:#666;
+text-align:right;
+margin-top:5px;
+">
+${new Date().toLocaleTimeString()}
+</div>
+
+</div>
 `;
 
           chatBox.appendChild(messageDiv);
@@ -1569,6 +1695,96 @@ box-shadow:0 2px 8px rgba(13,110,253,.3);
           container.appendChild(wrapper);
         }
       };
+      function previewBeforeImages(jobId) {
+        const input = document.getElementById(`before-${jobId}`);
+        const preview = document.getElementById(`beforePreview-${jobId}`);
+
+        preview.innerHTML = "";
+
+        if (!input.files.length) return;
+
+        const files = [...input.files];
+
+        files.slice(0, 4).forEach((file) => {
+          const img = document.createElement("img");
+
+          img.src = URL.createObjectURL(file);
+
+          img.style.width = "80px";
+          img.style.height = "80px";
+          img.style.objectFit = "cover";
+          img.style.borderRadius = "8px";
+
+          preview.appendChild(img);
+        });
+
+        document.getElementById(`beforeAddBtn-${jobId}`).innerHTML =
+          '<i class="fa-solid fa-plus"></i> Add More';
+
+        document
+          .getElementById(`beforeSendBtn-${jobId}`)
+          .classList.remove("d-none");
+      }
+      function previewAfterImages(jobId) {
+        const input = document.getElementById(`after-${jobId}`);
+        const preview = document.getElementById(`afterPreview-${jobId}`);
+
+        preview.innerHTML = "";
+
+        if (!input.files.length) return;
+
+        const files = [...input.files];
+
+        files.slice(0, 4).forEach((file) => {
+          const img = document.createElement("img");
+
+          img.src = URL.createObjectURL(file);
+
+          img.style.width = "80px";
+          img.style.height = "80px";
+          img.style.objectFit = "cover";
+          img.style.borderRadius = "8px";
+
+          preview.appendChild(img);
+        });
+
+        document.getElementById(`afterAddBtn-${jobId}`).innerHTML =
+          '<i class="fa-solid fa-plus"></i> Add More';
+
+        document
+          .getElementById(`afterSendBtn-${jobId}`)
+          .classList.remove("d-none");
+      }
+      function previewIssueImages(jobId) {
+        const input = document.getElementById(`issue-${jobId}`);
+        const preview = document.getElementById(`issuePreview-${jobId}`);
+
+        preview.innerHTML = "";
+
+        if (!input.files.length) return;
+
+        const files = [...input.files];
+
+        files.slice(0, 4).forEach((file) => {
+          const img = document.createElement("img");
+
+          img.src = URL.createObjectURL(file);
+
+          img.style.width = "80px";
+          img.style.height = "80px";
+          img.style.objectFit = "cover";
+          img.style.borderRadius = "8px";
+
+          preview.appendChild(img);
+        });
+
+        document.getElementById(`issueAddBtn-${jobId}`).innerHTML =
+          '<i class="fa-solid fa-plus"></i> Add More';
+
+        document
+          .getElementById(`issueSendBtn-${jobId}`)
+          .classList.remove("d-none");
+      }
 
       window.openImagePreview = function (jobId, startIndex = 0) {
         const files = document.getElementById(`img-${jobId}`).files;
@@ -1736,13 +1952,7 @@ box-shadow:0 2px 8px rgba(13,110,253,.3);
 
           const jobs = await res.json();
 
-          const hash = JSON.stringify(
-            jobs.map((j) => ({
-              id: j.id,
-              status: j.status,
-              msgCount: j.data?.messages?.length || 0,
-            })),
-          );
+          const hash = JSON.stringify(jobs);
 
           if (hash !== lastData) {
             console.log("UPDATE FOUND");
