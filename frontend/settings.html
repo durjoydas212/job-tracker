@@ -261,12 +261,20 @@
       async function deleteUser(id) {
         if (!confirm("Delete this user?")) return;
 
-        await fetch(`${API}/auth/user/${id}`, {
+        const res = await fetch(`${API}/auth/user/${id}`, {
           method: "DELETE",
-          headers: { "x-admin-id": currentUser.id },
+          headers: {
+            "x-admin-id": currentUser.id,
+          },
         });
 
-        alert("User deleted");
+        const data = await res.json();
+
+        if (!res.ok) {
+          return alert(data.message);
+        }
+
+        alert("User deleted successfully");
         loadUsers();
       }
 

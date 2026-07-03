@@ -196,24 +196,47 @@ router.post("/add-user", requireAdmin, async (req, res) => {
   }
 });
 
-// ================= DELETE USER (ADMIN ONLY) =================
+// ================= DELETE USER =================
 router.delete("/user/:id", requireAdmin, (req, res) => {
   const userId = req.params.id;
 
-  db.get("SELECT role FROM users WHERE id=?", [userId], (err, user) => {
-    if (err) return res.status(500).send(err);
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    if (user.role === "admin") {
-      return res
-        .status(400)
-        .json({ message: "Admin account cannot be deleted" });
-    }
-
-    db.run("DELETE FROM users WHERE id=?", [userId], function (err) {
-      if (err) return res.status(500).send(err);
-      res.send({ success: true });
+  // Prevent deleting yourself
+  if (String(userId) === String(req.adminUser.id)) {
+    return res.status(400).json({
+      message: "You cannot delete your own account.",
     });
+  }
+
+  db.get("SELECT * FROM users WHERE id=?", [userId], (err, user) => {
+    if (err) return res.status(500).send(err);
+
+    if (!user)
+      return res.status(404).json({
+        message: "User not found",
+      });
+
+    // Count admins
+    db.get(
+      "SELECT COUNT(*) AS total FROM users WHERE role='admin'",
+      [],
+      (err, row) => {
+        if (err) return res.status(500).send(err);
+
+        if (user.role === "admin" && row.total <= 1) {
+          return res.status(400).json({
+            message: "At least one admin is required.",
+          });
+        }
+
+        db.run("DELETE FROM users WHERE id=?", [userId], function (err) {
+          if (err) return res.status(500).send(err);
+
+          res.json({
+            success: true,
+          });
+        });
+      },
+    );
   });
 });
 

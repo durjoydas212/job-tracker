@@ -1398,7 +1398,7 @@
 
 <strong>NOTES:</strong> ${job.notes || "-"}<br>
 
-<strong>ASSIGNED USERS:</strong>
+<strong>ASSIGNED USERS:</strong> ${renderAssignedUsers(job)}<br>
 
 <h5 class="mt-2">
 Before Photos :
@@ -1821,14 +1821,14 @@ margin-top:10px;
       function toggleMore(jobId, btn) {
         expandedJobs[jobId] = !expandedJobs[jobId];
 
-        const box = document.getElementById("more-" + jobId);
+        const box = document.getElementById(`more-${jobId}`);
 
-        if (expandedJobs[jobId]) {
-          box.style.display = "block";
-          btn.innerHTML = "▲ Hide Details";
-        } else {
-          box.style.display = "none";
-          btn.innerHTML = "▼ More Details";
+        if (!box) return;
+
+        box.style.display = expandedJobs[jobId] ? "block" : "none";
+
+        if (btn) {
+          btn.innerHTML = expandedJobs[jobId] ? "▲ Hide Details" : "▼ See More";
         }
       }
       async function toggleClose(jobId) {
@@ -2544,6 +2544,12 @@ margin-top:10px;
               id: j.id,
               status: j.status,
               updated: j.updated_at,
+              before: j.data?.beforeImages?.length || 0,
+              after: j.data?.afterImages?.length || 0,
+              issue: j.data?.issueImages?.length || 0,
+              messages: j.data?.messages?.length || 0,
+              locked: j.data?.locked,
+              closed: j.data?.closed,
             })),
           );
 
@@ -2578,10 +2584,10 @@ margin-top:10px;
 
             knownStatuses[job.id] = job.status;
           });
-
           allJobs = jobs;
 
           filterJobs();
+          refreshChats();
         } catch (err) {
           console.error("Job update failed", err);
         }

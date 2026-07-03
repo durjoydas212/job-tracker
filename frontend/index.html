@@ -217,7 +217,7 @@
 
     <script>
       const currentUser = JSON.parse(localStorage.getItem("user") || "null");
-
+      let openedDetails = {};
       if (!currentUser || !currentUser.role) {
         localStorage.removeItem("user");
         window.location.replace("login.html");
@@ -518,13 +518,14 @@
       // job images render
       function renderJobImages(images = []) {
         const imgs = Array.isArray(images) ? images : [];
+        const getPath = (img) => (typeof img === "string" ? img : img.path);
         if (!imgs.length) return "";
 
         const total = imgs.length;
 
         if (total === 1) {
           return `
-      <img src="https://job-tracker-production-47e1.up.railway.app${imgs[0]}"
+      <img src="https://job-tracker-production-47e1.up.railway.app${getPath(imgs[0])}"
            onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 0)'
            style="width:100%; max-width:280px; border-radius:10px; margin-top:5px; cursor:pointer; display:block;">
     `;
@@ -536,7 +537,7 @@
         ${imgs
           .map(
             (img, i) => `
-          <img src="https://job-tracker-production-47e1.up.railway.app${img}"
+          <img src="https://job-tracker-production-47e1.up.railway.app${getPath(img)}"
                onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, ${i})'
                style="width:100%; height:140px; object-fit:cover; border-radius:8px; cursor:pointer;">
         `,
@@ -549,13 +550,13 @@
         if (total === 3) {
           return `
       <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:6px; max-width:280px; margin-top:5px;">
-        <img src="https://job-tracker-production-47e1.up.railway.app${imgs[0]}"
+        <img src="https://job-tracker-production-47e1.up.railway.app${getPath(imgs[0])}"
              onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 0)'
              style="grid-row:span 2; width:100%; height:244px; object-fit:cover; border-radius:8px; cursor:pointer;">
-        <img src="https://job-tracker-production-47e1.up.railway.app${imgs[1]}"
+        <img src="https://job-tracker-production-47e1.up.railway.app${getPath(imgs[1])}"
              onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 1)'
              style="width:100%; height:118px; object-fit:cover; border-radius:8px; cursor:pointer;">
-        <img src="https://job-tracker-production-47e1.up.railway.app${imgs[2]}"
+        <img src="https://job-tracker-production-47e1.up.railway.app${getPath(imgs[2])}"
              onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, 2)'
              style="width:100%; height:118px; object-fit:cover; border-radius:8px; cursor:pointer;">
       </div>
@@ -571,7 +572,7 @@
           const isLast = i === 3 && total > 4;
           return `
           <div style="position:relative;">
-            <img src="https://job-tracker-production-47e1.up.railway.app${img}"
+            <img src="https://job-tracker-production-47e1.up.railway.app${getPath(img)}"
                  onclick='openImageViewerFromDB(${JSON.stringify(imgs)}, ${i})'
                  style="width:100%; height:120px; object-fit:cover; border-radius:8px; cursor:pointer;">
             ${
@@ -1222,6 +1223,15 @@ box-shadow:0 2px 8px rgba(13,110,253,.3);
             historyContainer.appendChild(div);
           } else {
             myJobsContainer.appendChild(div);
+            historyContainer.appendChild(div);
+          }
+          if (openedDetails[job.id]) {
+            document.getElementById(`details-${job.id}`).style.display =
+              "block";
+
+            document
+              .getElementById(`arrow-${job.id}`)
+              .classList.replace("fa-chevron-down", "fa-chevron-up");
           }
 
           const draft = draftReplies[`reply-${job.id}`];
@@ -1302,11 +1312,15 @@ box-shadow:0 2px 8px rgba(13,110,253,.3);
 
           arrow.classList.remove("fa-chevron-down");
           arrow.classList.add("fa-chevron-up");
+
+          openedDetails[jobId] = true;
         } else {
           details.style.display = "none";
 
           arrow.classList.remove("fa-chevron-up");
           arrow.classList.add("fa-chevron-down");
+
+          delete openedDetails[jobId];
         }
       }
       function showStatusEditor(jobId) {
@@ -1356,7 +1370,7 @@ box-shadow:0 2px 8px rgba(13,110,253,.3);
             <div style="position:relative;">
               
               <img 
-                src="https://job-tracker-production-47e1.up.railway.app${img}"
+                src="https://job-tracker-production-47e1.up.railway.app${getPath(img)}"
                 onclick='openImageViewerFromDB(${JSON.stringify(images)}, ${i})'
                 style="
                   width:100%;
