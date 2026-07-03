@@ -333,38 +333,35 @@ router.post("/:id/assigned-users", (req, res) => {
         db.run(
           "UPDATE jobs SET data=? WHERE id=?",
           [JSON.stringify(data), jobId],
-          (err3) => {
+          async (err3) => {
             if (err3) return res.status(500).send(err3);
 
-            async (err3) => {
-              if (err3) return res.status(500).send(err3);
+            try {
+              if (!already && user.phone) {
+                const jobLink = getJobLink();
 
-              // Send SMS only first time assignment
-              try {
-                if (!already && user.phone) {
-                  const jobLink = getJobLink();
+                await sendSms(
+                  user.phone,
+                  `Hi ${user.name},
 
-                  await sendSms(
-                    user.phone,
-                    `You have been assigned a new job.
+You have been assigned a new job.
 
 Job #: ${row.job_number}
 
-Current Status: ${row.status}
+Status: ${row.status}
 
 Open Job:
 ${jobLink}`,
-                  );
-                }
-              } catch (e) {
-                console.log("Assignment SMS:", e.message);
+                );
               }
+            } catch (e) {
+              console.log("Assignment SMS:", e.message);
+            }
 
-              res.json({
-                success: true,
-                assignedUsers: data.assignedUsers,
-              });
-            };
+            res.json({
+              success: true,
+              assignedUsers: data.assignedUsers,
+            });
           },
         );
       },

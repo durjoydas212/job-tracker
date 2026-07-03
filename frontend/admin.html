@@ -2032,20 +2032,32 @@ margin-top:10px;
       async function addUserToJob(jobId) {
         const id = document.getElementById(`select-user-${jobId}`).value;
 
-        await fetch(`${API}/jobs/${jobId}/assigned-users`, {
+        const res = await fetch(`${API}/jobs/${jobId}/assigned-users`, {
           method: "POST",
-
           headers: {
             "Content-Type": "application/json",
           },
-
           body: JSON.stringify({
-            userId: id,
+            userId: Number(id),
           }),
         });
 
-        loadJobs();
+        const result = await res.json();
+
+        if (!res.ok) {
+          alert(result.message || "Failed");
+          return;
+        }
+
+        const job = allJobs.find((j) => j.id == jobId);
+
+        if (job) {
+          job.data.assignedUsers = result.assignedUsers;
+        }
+
+        renderTable(allJobs);
       }
+
       async function removeAssignedUserFromJob(jobId, userId) {
         try {
           const res = await fetch(
