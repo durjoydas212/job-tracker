@@ -1219,11 +1219,12 @@ box-shadow:0 2px 8px rgba(13,110,253,.3);
 `
 }
   `;
-          if (job.data?.closed) {
+          const status = (job.status || "").trim();
+
+          if (status === "Complete" || status === "Closed") {
             historyContainer.appendChild(div);
           } else {
             myJobsContainer.appendChild(div);
-            historyContainer.appendChild(div);
           }
           if (openedDetails[job.id]) {
             document.getElementById(`details-${job.id}`).style.display =

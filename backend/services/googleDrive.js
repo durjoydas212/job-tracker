@@ -124,7 +124,15 @@ async function uploadJobImagesToDrive(jobNumber, images) {
 }
 
 async function uploadCategory(imageArray, folderId) {
-  for (const imageUrl of imageArray) {
+  for (let image of imageArray) {
+    // support old and new image formats
+    const imageUrl =
+      typeof image === "string"
+        ? image
+        : image.url || image.path || image.image || "";
+
+    if (!imageUrl) continue;
+
     const relativePath = imageUrl.replace(/^\/+/, "");
 
     const fullPath = path.join(process.cwd(), relativePath);
@@ -134,22 +142,23 @@ async function uploadCategory(imageArray, folderId) {
       continue;
     }
 
-    // Check if file already exists
+    const fileName = path.basename(fullPath);
+
     const existing = await drive.files.list({
-      q: `'${folderId}' in parents and name='${path.basename(fullPath)}' and trashed=false`,
+      q: `'${folderId}' in parents and name='${fileName}' and trashed=false`,
       fields: "files(id,name)",
       supportsAllDrives: true,
       includeItemsFromAllDrives: true,
     });
 
     if (existing.data.files.length) {
-      console.log("Already uploaded:", path.basename(fullPath));
+      console.log("Already uploaded:", fileName);
       continue;
     }
 
     await drive.files.create({
       requestBody: {
-        name: path.basename(fullPath),
+        name: fileName,
         parents: [folderId],
       },
       media: {
@@ -157,6 +166,11 @@ async function uploadCategory(imageArray, folderId) {
       },
       supportsAllDrives: true,
     });
+
+    // mark uploaded
+    if (typeof image === "object") {
+      image.uploaded = true;
+    }
   }
 }
 
