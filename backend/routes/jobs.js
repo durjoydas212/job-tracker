@@ -78,25 +78,39 @@ router.post("/", async (req, res) => {
       if (err) return res.status(500).send(err);
 
       try {
-        const userPhone = data?.userPhone;
+        const assignedUsers = data.assignedUsers || [];
 
-        if (userPhone) {
-          const jobLink = getJobLink();
+        for (const assigned of assignedUsers) {
+          await new Promise((resolve) => {
+            db.get(
+              "SELECT phone,name FROM users WHERE id=?",
+              [assigned.id],
+              async (err, user) => {
+                if (user?.phone) {
+                  const jobLink = getJobLink();
 
-          await sendSms(
-            userPhone,
-            `New Job Submitted
+                  await sendSms(
+                    user.phone,
+                    `Hi ${user.name},
 
-          Job Number: #${job_number}
+You have been assigned a new job.
 
-          Status: ${status || "Pending"}
+Job #: ${job_number}
 
-          Open Job:
-          ${jobLink}`,
-          );
+Status: ${status || "Pending"}
+
+Open Job:
+${jobLink}`,
+                  );
+                }
+
+                resolve();
+              },
+            );
+          });
         }
-      } catch (smsErr) {
-        console.log("SMS ERROR:", smsErr.message);
+      } catch (e) {
+        console.log(e);
       }
 
       if (data?.uploadToDrive) {
@@ -267,16 +281,22 @@ router.put("/:id", (req, res) => {
         if (err) return res.status(500).send(err);
 
         try {
-          const userPhone = oldData.userPhone || newData.userPhone;
+          const formattedStatus = status.replace(/([a-z])([A-Z])/g, "$1 $2");
 
-          if (userPhone && status) {
-            const jobLink = getJobLink();
+          const assignedUsers = newData.assignedUsers || [];
 
-            const formattedStatus = status.replace(/([a-z])([A-Z])/g, "$1 $2");
+          for (const assigned of assignedUsers) {
+            await new Promise((resolve) => {
+              db.get(
+                "SELECT phone,name FROM users WHERE id=?",
+                [assigned.id],
+                async (err, user) => {
+                  if (user?.phone && status) {
+                    const jobLink = getJobLink();
 
-            await sendSms(
-              userPhone,
-              `Job Status Updated
+                    await sendSms(
+                      user.phone,
+                      `Job Status Updated
 
 Job #: ${row.job_number}
 
@@ -284,7 +304,13 @@ New Status: ${formattedStatus}
 
 Open Job:
 ${jobLink}`,
-            );
+                    );
+                  }
+
+                  resolve();
+                },
+              );
+            });
           }
         } catch (smsErr) {
           console.log("SMS ERROR:", smsErr.message);
@@ -400,7 +426,7 @@ router.delete("/:id/assigned-users/:userId", (req, res) => {
   });
 });
 // uplode image
-router.put("/:id/photos", (req, res) => {
+router.put("/:id/photos", async (req, res) => {
   const { type, images } = req.body;
   const id = req.params.id;
 
@@ -437,8 +463,32 @@ router.put("/:id/photos", (req, res) => {
     db.run(
       "UPDATE jobs SET data=? WHERE id=?",
       [JSON.stringify(data), id],
-      function (err) {
+      async function (err) {
         if (err) return res.status(500).send(err);
+
+        if (data.driveSync) {
+          const folder = await findFolderByName(job.job_number);
+
+          const jobFolderId =
+            folder?.id || (await createFolder(job.job_number));
+
+          let folderId;
+
+          if (type === "before") {
+            folderId = await getOrCreateSubFolder(jobFolderId, "Before");
+          }
+
+          if (type === "after") {
+            folderId = await getOrCreateSubFolder(jobFolderId, "After");
+          }
+
+          if (type === "issue") {
+            folderId = await getOrCreateSubFolder(jobFolderId, "Issue");
+          }
+
+          await uploadCategory(uploaded, folderId);
+        }
+
         res.json({ success: true });
       },
     );
@@ -490,10 +540,12 @@ router.post("/message/:id", async (req, res) => {
         if (err) return res.status(500).send(err);
 
         try {
+          // SMS
           const userPhone = data.userPhone;
 
           if (false && userPhone && sender === "admin") {
             const jobLink = getJobLink();
+
             await sendSms(
               userPhone,
               `New message for Job #${row.job_number}
@@ -504,8 +556,33 @@ Open Job:
 ${jobLink}`,
             );
           }
-        } catch (smsErr) {
-          console.log("SMS ERROR:", smsErr.message);
+
+          // Google Drive
+
+          if (updatedData.driveSync && image) {
+            const folder = await findFolderByName(row.job_number);
+
+            const jobFolderId =
+              folder?.id || (await createFolder(row.job_number));
+
+            const chatFolderId = await getOrCreateSubFolder(
+              jobFolderId,
+              "Chat",
+            );
+
+            await uploadCategory(
+              [
+                {
+                  path: image,
+                  user: sender,
+                  time: new Date().toLocaleString(),
+                },
+              ],
+              chatFolderId,
+            );
+          }
+        } catch (e) {
+          console.log(e);
         }
 
         res.send({ success: true });
@@ -593,6 +670,7 @@ router.post("/upload-drive/:id", async (req, res) => {
         chatImages: data.chatImages || [],
       });
       data.driveUploaded = true;
+      data.driveSync = true;
 
       db.run("UPDATE jobs SET data=? WHERE id=?", [
         JSON.stringify(data),

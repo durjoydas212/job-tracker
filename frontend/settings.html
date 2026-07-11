@@ -165,12 +165,14 @@
       document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("myEmail").innerText =
           currentUser.email || currentUser.phone || "-";
-        document.getElementById("profileAdminId").innerText =
-          currentUser.email ||
-          currentUser.phone ||
-          currentUser.name ||
-          `Admin #${currentUser.id}`;
-        loadUsers();
+        document.getElementById("profileAdminId").innerHTML = `
+    <div style="font-weight:600;">
+        ${currentUser.name || "User"}
+    </div>
+    <div style="font-size:13px;color:#777;">
+        ${currentUser.email || currentUser.phone || ""}
+    </div>
+`;
       });
 
       async function loadUsers() {

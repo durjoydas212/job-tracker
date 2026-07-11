@@ -312,11 +312,14 @@
         window.location.href = "login.html";
       }
 
-      document.getElementById("profileUserId").innerText =
-        currentUser.email ||
-        currentUser.phone ||
-        currentUser.name ||
-        `User #${currentUser.id}`;
+      document.getElementById("profileUserId").innerHTML = `
+    <div style="font-weight:600;">
+        ${currentUser.name || "User"}
+    </div>
+    <div style="font-size:13px;color:#777;">
+        ${currentUser.email || currentUser.phone || ""}
+    </div>
+`;
 
       function logout() {
         localStorage.removeItem("user");

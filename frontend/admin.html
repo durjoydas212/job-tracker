@@ -762,12 +762,14 @@
         }
       }
 
-      const adminLabel =
-        currentUser.email ||
-        currentUser.phone ||
-        currentUser.name ||
-        `Admin #${currentUser.id}`;
-      document.getElementById("profileAdminId").innerText = adminLabel;
+      document.getElementById("profileAdminId").innerHTML = `
+    <div style="font-weight:600;">
+        ${currentUser.name || "User"}
+    </div>
+    <div style="font-size:13px;color:#777;">
+        ${currentUser.email || currentUser.phone || ""}
+    </div>
+`;
 
       // click function
       function openLightbox(src) {
